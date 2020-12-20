@@ -1,0 +1,74 @@
+---
+- name: Resetting Kube config on node
+  command: |
+    kubeadm reset --force
+  register: kubeadm_reset
+
+- name: Copy kubeadm.yaml to /root
+  template:
+    src: kubeadm.yaml.j2
+    dest: /root/kubeadm.yaml
+    mode: 0644
+
+- name: Inicializing Kubernetes cluster
+  command: |
+    kubeadm init --config /root/kubeadm.yaml --ignore-preflight-errors=NumCPU
+  register: kubeadm_init
+
+- name: Ensuring .kube directory exists
+  file:
+    path: ~/.kube
+    state: directory
+
+- name: Symlinking kubectl admin.conf to ~/.kube/conf
+  file:
+    src: /etc/kubernetes/admin.conf
+    dest: ~/.kube/config
+    state: link
+
+- name: Deploying WeaveNet network (1/1)
+  shell: kubectl apply -f {{ default_kubernetes_cni_weavenet_manifestUrl }}
+  register: deploying_weavenet
+
+- name: Adding Metallb ConfigMap manifest to /root (0/4)
+  template:
+    src: metallb-cm.yaml.j2
+    dest: /root/metallb-cm.yaml
+    mode: 0644
+
+- name: Deploying Metallb manifest (1/3)
+  shell: kubectl apply -f {{ metallb_kubernetes_namespace_manifestUrl }}
+
+- name: Deploying Metallb manifest (2/3)
+  shell: kubectl apply -f {{ metallb_kubernetes_deploy_manifestUrl }}
+
+- name: Deploying Metallb manifest (3/4)
+  shell: kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+
+- name: Deploying Metallb manifest (4/4)
+  shell: kubectl apply -f /root/metallb-cm.yaml
+
+- name: Deploying nginx ingress controller
+  shell: kubectl apply -f {{ default_nginx_controller_manifestUrl }}
+
+- name: Deploying metric server
+  shell: kubectl apply -f {{ metric_server_kubernetes_deploy_manifestUrl }}
+
+- name: Creating CA key"
+  shell: kubeadm init phase upload-certs --upload-certs | grep -v certs
+  register: K8S_KEY
+
+- name: Creating a join control plane command type
+  shell:  kubeadm token create --print-join-command --certificate-key {{ K8S_KEY.stdout }}
+  register: K8S_JOIN_MASTER
+
+- name: Creating a join worker command type
+  shell:  kubeadm token create --print-join-command
+  register: K8S_JOIN_NODE
+
+- name: Adding K8S tokens to host holder
+  add_host:
+    name:   K8S_TOKEN_HOLDER
+    key:    "{{ K8S_KEY.stdout }}"
+    joink8smaster: "{{ K8S_JOIN_MASTER.stdout }}"
+    joink8snode: "{{ K8S_JOIN_NODE.stdout }}"

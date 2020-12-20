@@ -1,0 +1,10 @@
+---
+- name: Resetting kube config on node
+  command: |
+    kubeadm reset --force
+  register: kubeadm_reset
+
+- name: Adding worker node in cluster
+  shell: |
+    {{ hostvars['K8S_TOKEN_HOLDER']['joink8snode'] }} --ignore-preflight-errors=NumCPU
+  register: kubeadm_worker_init

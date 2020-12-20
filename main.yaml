@@ -1,0 +1,61 @@
+---
+- name: Inventory Assertion
+  hosts: localhost
+  gather_facts: false
+  roles:
+  - inventory_validation
+
+- name: Getting fects
+  hosts: all
+  user: "{{ user }}"
+  become: yes
+  gather_facts: true
+
+- name: Generating Stack Passwords
+  hosts: localhost
+  tasks:
+  - add_host:
+      name: PASSWORD_HOLDER
+      KEEP_AVALIVE_PASSWORD_AUTH: "{{ lookup('password', '/dev/null length=16') }}"
+      HAPROXY_WEB_CONSOLE_PASSWORD: "{{ lookup('password', '/dev/null length=16') }}"
+
+- name: Generated Stack Password
+  hosts: localhost
+  roles:
+  - generated_passwords
+
+- hosts: HAPROXY_PRIMARY
+  become: yes
+  user: "{{ user }}"
+  roles:
+  - haproxy_primary
+
+#- hosts: HAPROXY_SECONDARY
+#  become: yes
+#  user: "{{ user }}"
+#  roles:
+#  - haproxy_secondary
+
+- hosts: KUBERNETES_MASTER_INIT, KUBERNETES_MASTERS, KUBERNETES_NODES
+  become: yes
+  user: "{{ user }}"
+  roles:
+  - install_kubernetes
+
+- hosts: KUBERNETES_MASTER_INIT
+  become: yes
+  user: "{{ user }}"
+  roles:
+  - create_cluster
+
+- hosts: KUBERNETES_MASTERS
+  become: yes
+  user: "{{ user }}"
+  roles:
+  - join_masters
+
+- hosts: KUBERNETES_NODES
+  become: yes
+  user: "{{ user }}"
+  roles:
+  - join_nodes

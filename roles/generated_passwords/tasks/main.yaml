@@ -1,0 +1,8 @@
+---
+- name: Keep Alive Password
+  debug:
+    msg: "{{ hostvars['PASSWORD_HOLDER']['KEEP_AVALIVE_PASSWORD_AUTH'] }}"
+
+- name: HaProxy Web Login Password
+  debug:
+    msg: "{{ hostvars['PASSWORD_HOLDER']['HAPROXY_WEB_CONSOLE_PASSWORD'] }}"

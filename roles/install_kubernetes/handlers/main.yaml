@@ -1,0 +1,24 @@
+---
+- name: Enabling Docker
+  service: 
+    name: docker 
+    enabled: yes
+  listen: "start and enable"
+
+- name: Starting Docker service
+  service: 
+    name: docker 
+    state: started
+  listen: "start and enable"
+
+- name: Enabling Kubelet
+  service: 
+    name: kubelet 
+    enabled: yes
+  listen: "start and enable"
+
+- name: Starting Kubelet service
+  service: 
+    name: kubelet 
+    state: started
+  listen: "start and enable"

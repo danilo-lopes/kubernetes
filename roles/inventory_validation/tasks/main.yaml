@@ -1,0 +1,28 @@
+---
+- name: Assertion for HaProxy Single Mode
+  assert:
+    that:
+      - "groups['haproxy'] | length == 1"
+  when: SINGLE_HAPROXY | bool
+
+- assert:
+    { that: "not '{{ HA_HAPROXY }}' | bool"}
+  when: SINGLE_HAPROXY | bool
+
+- assert:
+    { that: "'{SINGLE_HAPROXY}' | bool "}
+  when: SINGLE_HAPROXY | bool
+
+- name: Assertion for HaProxy HA Mode
+  assert:
+    that:
+      - "groups['haproxy'] | length == 2"
+  when: HA_HAPROXY | bool
+
+- assert:
+    { that: "'{{ HA_HAPROXY }}' | bool"}
+  when: HA_HAPROXY | bool
+
+- assert:
+    { that: "not '{SINGLE_HAPROXY}' | bool "}
+  when: HA_HAPROXY | bool

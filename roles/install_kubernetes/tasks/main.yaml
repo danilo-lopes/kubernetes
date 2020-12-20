@@ -1,0 +1,242 @@
+---
+- name: Putting HTTP Proxy Server Address in /etc/environment
+  lineinfile:
+    path: /etc/environment
+    line: export http_proxy=http://{{ PROXY_SERVER_ADDRESS }}:{{ PROXY_SERVER_PORT }}
+  when: PROXY | bool
+
+- name: Putting HTTPS Proxy Server Address in /etc/environment
+  lineinfile:
+    path: /etc/environment
+    line: export https_proxy=http://{{ PROXY_SERVER_ADDRESS }}:{{ PROXY_SERVER_PORT }}
+  when: PROXY | bool
+
+- name: Exporting no_proxy ip addresses
+  lineinfile:
+    path: /etc/environment
+    line: export no_proxy='{{ IP_ADDRESSES_NOT_IN_PROXY }}'
+  when: PROXY | bool
+
+- name: RedHat | Starting FirewallD
+  service:
+    name: firewalld
+    state: stopped
+    enabled: no
+  when: not FIREWALL | bool and ansible_facts['os_family'] == "RedHat" 
+
+- name: RedHat | Starting FirewallD
+  service:
+    name: firewalld
+    state: started
+    enabled: yes
+  when: FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
+
+- name: Ubuntu | Stopping UFW
+  service:
+    name: ufw
+    state: stopped
+    enabled: no
+  when: not FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
+
+- name: Ubuntu | Starting UFW
+  service:
+    name: ufw
+    state: started
+    enabled: yes
+  when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
+
+- name: RedHat | Applying FirewallD rules
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    immediate: yes
+    state: enabled
+  loop:
+  - 22/tcp
+  - 6443/tcp
+  - 2379-2380/tcp
+  - 10250/tcp
+  - 10251/tcp
+  - 10252/tcp
+  - 30000-32767/tcp
+  - 6783-6784/udp
+  when: FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
+
+- name: Ubuntu | Applying UFW rules
+  ufw:
+    port: "{{ item }}"
+    rule: allow
+    proto: tcp
+    state: enabled
+  loop:
+  - 22
+  - 6443
+  - 2379:2380
+  - 10250
+  - 10251
+  - 10252
+  - 30000:32767
+  - 6783
+  when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
+
+- name: Ubuntu | UFW Rules UDP
+  ufw:
+    port: "{{ item }}"
+    rule: allow
+    proto: udp
+    state: enabled
+  loop:
+  - 6783:6784
+  when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
+
+- name: RedHat | Adding FirewallD Mascared
+  firewalld:
+    masquerade: 'True'
+    state: enabled
+    permanent: 'True'
+    immediate: 'True'
+  when: FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
+
+- name: RedHat | Restarting FirewallD service
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: firewalld
+  when: FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
+
+- name: Ubuntu | Restarting UFW service
+  systemd:
+    state: restarted
+    daemon_reload: yes
+    name: ufw
+  when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
+
+- name: Add br_netfilter module
+  modprobe:
+    name: br_netfilter
+    state: present
+
+- name: Set IPV4 bridge
+  sysctl:
+    name: net.bridge.bridge-nf-call-iptables
+    value: '1'
+    sysctl_file: /etc/sysctl.conf
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Set IPV6 bridge
+  sysctl:
+    name: net.bridge.bridge-nf-call-ip6tables
+    value: '1'
+    sysctl_file: /etc/sysctl.conf
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Set IPV4 forward in sysctl.conf
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_file: /etc/sysctl.conf
+    sysctl_set: yes
+    state: present
+    reload: yes
+
+- name: Installing Docker
+  shell: curl -fsSL https://get.docker.com | bash -
+
+- name: RedHat | Starting Docker
+  systemd:
+    name: docker
+    state: started
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Ubuntu | Adding Kubernetes APT signing key
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+  when: ansible_facts['distribution'] == "Ubuntu"
+
+- name: Ubuntu | Adding Kubernetes repository
+  apt_repository:
+    repo: deb http://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+  when: ansible_facts['distribution'] == "Ubuntu"
+
+- name: RedHat | Adding Kubernetes repository
+  yum_repository:
+    name: Kubernetes
+    description: Kubernetes Binaries
+    baseurl: https://packages.cloud.google.com/yum/repos/kubernetes-el7-$basearch
+    gpgkey: https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+    gpgcheck: yes
+    repo_gpgcheck: yes
+    enabled: yes
+    exclude: kubelet kubeadm kubectl
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Coping Docker config file
+  copy:
+    src: ../files/daemon.json
+    dest: /etc/docker/daemon.json
+
+- name: Creating Docker service directory
+  file:
+    path: /etc/systemd/system/docker.service.d
+    state: directory
+
+- name: Adding Docker Proxy Configuration file
+  template:
+    src: docker-proxy.conf.j2
+    dest: /etc/systemd/system/docker.service.d/proxy.conf
+    mode: 0644
+    owner: root
+    group: root
+  when: PROXY | bool
+
+- name: Disabling SWAP
+  replace:
+    path: /etc/fstab
+    regexp: '^(\s*)([^#\n]+\s+)(\w+\s+)swap(\s+.*)$'
+    replace: '#\1\2\3swap\4'
+    backup: yes
+
+- name: Turning off Swap
+  shell: swapoff -a
+  register: swapoff
+
+- name: RedHat | Installing Kubernetes packages
+  package:
+    name: [
+      'kubelet-{{ KUBERNETES_VERSION }}',
+      'kubeadm-{{ KUBERNETES_VERSION }}',
+      'kubectl-{{ KUBERNETES_VERSION }}'
+    ]
+    state: present
+    disable_excludes: Kubernetes
+  notify: "start and enable"
+  when: ansible_facts['os_family'] == "RedHat"
+
+- name: Ubuntu | Installing Kubernetes packages
+  package:
+    name: [
+      'kubelet-{{ KUBERNETES_VERSION }}',
+      'kubeadm-{{ KUBERNETES_VERSION }}',
+      'kubectl-{{ KUBERNETES_VERSION }}'
+    ]
+    state: present
+  notify: "start and enable"
+  when: ansible_facts['distribution'] == "Ubuntu"
+
+- name: Restarting docker service
+  systemd:
+    name: docker
+    state: restarted
+    daemon_reload: yes
+
+- name: Restarting kubelet service
+  systemd:
+    name: kubelet
+    state: restarted
+    daemon_reload: yes

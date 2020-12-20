@@ -1,0 +1,32 @@
+vrrp_script chk_haproxy {
+  script "/usr/bin/pgrep haproxy"
+  interval 2
+  weight 2
+}
+
+vrrp_instance VI_1 {
+  state MASTER
+  interface {{ ansible_default_ipv4.interface }}
+  virtual_router_id 101
+  {% if ansible_default_ipv4.address == hostvars[groups['HAPROXY_PRIMARY'][0]]['ansible_default_ipv4']['address'] %}
+  priority 100
+  {% endif %}
+  {% if ansible_default_ipv4.address == hostvars[groups['HAPROXY_SECONDARY'][0]]['ansible_default_ipv4']['address'] %}
+  priority 101
+  {% endif %}
+  advert_int 1
+
+  authentication {
+    auth_type PASS
+    auth_pass {{ hostvars['PASSWORD_HOLDER']['KEEP_AVALIVE_PASSWORD_AUTH'] }}
+  }
+
+  virtual_ipaddress {
+    {{ LOADBALANCER }}
+  }
+
+ track_script {
+    chk_haproxy
+ }
+
+}

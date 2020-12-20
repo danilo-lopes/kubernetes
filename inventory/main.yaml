@@ -1,0 +1,46 @@
+all:
+  vars:
+    user: vagrant
+
+    HA_HAPROXY: 'True'
+    SINGLE_HAPROXY: 'False'
+    HAPROXY_WEB_USER: haproxy
+
+    FIREWALL: 'True'
+
+    PROXY: 'False'
+    PROXY_SERVER_ADDRESS: 192.168.15.178
+    PROXY_SERVER_PORT: 3128
+    IP_ADDRESSES_NOT_IN_PROXY: 'localhost,127.0.0.1,10.96.0.0/12'
+
+    KUBERNETES_VERSION: 1.18.8
+    SECURITY_PORT: 6443
+    LOADBALANCER: 192.168.15.161
+    METALLB_RANGEIP_BEGIN: 192.168.15.162
+    METALLB_RANGEIP_END: 192.168.15.165
+
+  children:
+
+    k8s:
+      children:
+        KUBERNETES_MASTER_INIT:
+          hosts:
+            192.168.15.158
+
+        KUBERNETES_MASTERS:
+          hosts:
+            192.168.15.155:
+
+        KUBERNETES_NODES:
+          hosts:
+            192.168.15.156:
+            192.168.15.157:
+
+    haproxy:
+      children:
+        HAPROXY_PRIMARY:
+          hosts:
+            192.168.15.160
+        HAPROXY_SECONDARY:
+          hosts:
+            192.168.15.159

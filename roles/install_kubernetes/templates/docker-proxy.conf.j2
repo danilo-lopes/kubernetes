@@ -1,0 +1,4 @@
+[Service]
+Environment="HTTP_PROXY=http://{{ PROXY_SERVER_ADDRESS }}:{{ PROXY_SERVER_PORT }}"
+Environment="HTTPS_PROXY=http://{{ PROXY_SERVER_ADDRESS }}:{{ PROXY_SERVER_PORT }}"
+Environment="NO_PROXY="{{ IP_ADDRESSES_NOT_IN_PROXY }}"
