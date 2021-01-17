@@ -1,21 +1,9 @@
 ---
-- name: Putting HTTP Proxy Server Address in /etc/environment
-  lineinfile:
-    path: /etc/environment
-    line: export http_proxy=http://{{ PROXY_SERVER_ADDRESS }}:{{ PROXY_SERVER_PORT }}
-  when: PROXY | bool
-
-- name: Putting HTTPS Proxy Server Address in /etc/environment
-  lineinfile:
-    path: /etc/environment
-    line: export https_proxy=http://{{ PROXY_SERVER_ADDRESS }}:{{ PROXY_SERVER_PORT }}
-  when: PROXY | bool
-
-- name: Exporting no_proxy ip addresses
-  lineinfile:
-    path: /etc/environment
-    line: export no_proxy='{{ IP_ADDRESSES_NOT_IN_PROXY }}'
-  when: PROXY | bool
+- name: Puting SELinux in permissive mode
+  selinux:
+    policy: targeted
+    state: permissive
+  when: ansible_facts['os_family'] == "RedHat"
 
 - name: RedHat | Stopping FirewallD
   service:
@@ -48,13 +36,13 @@
 - name: RedHat | Applying FirewallD rules
   firewalld:
     port: "{{ item }}"
-    permanent: yes
-    immediate: yes
+    permanent: 'True'
+    immediate: 'True'
     state: enabled
   loop:
     - 22/tcp
-    - 6443/tcp
-    - 1936/tcp
+    - 6443/tcp # Kubernetes Control Plane Port
+    - 1936/tcp # HaProxy Web Console
   when: FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
 
 - name: Ubuntu | Applying UFW rules
@@ -64,17 +52,32 @@
     proto: tcp
     state: enabled
   loop:
-  - 22
-  - 6443
-  - 1936
+  - '22'
+  - '6443'
+  - '1936'
+  when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
+
+- name: RedHat | Applying FirewallD rules for VRRP Multi-Cast
+  firewalld:
+    source: 224.0.0.18
+    permanent: 'True'
+    immediate: 'True'
+    state: enabled
+  when: FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
+
+- name: Ubuntu | Applying UFW rules for VRRP Multi-Cast
+  ufw:
+    rule: allow
+    dest: 224.0.0.18
+    state: enabled
   when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
 
 - name: RedHat | Adding FirewallD Mascared
   firewalld:
     masquerade: 'True'
-    state: enabled
     permanent: 'True'
     immediate: 'True'
+    state: enabled
   when: FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
 
 - name: RedHat | Restarting FirewallD service
@@ -139,24 +142,8 @@
     priority_id: 100
   notify: "restart keepalived"
 
-- name: Adding keepalive script user
-  user:
-    name: keepalived_script
-    comment: KeepaliveD System User
-    shell: /sbin/nologin
-
 - name: Configuring HaProxy
   template:
     src: haproxy.cfg.j2
     dest: /etc/haproxy/haproxy.cfg
   notify: "restart haproxy"
-
-# - name: Restarting KeepaliveD
-#   systemd:
-#     name: keepalived
-#     state: restarted
-#
-# - name: Restarting HaProxy
-#   systemd:
-#     name: haproxy
-#     state: restarted

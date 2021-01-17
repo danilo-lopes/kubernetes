@@ -54,21 +54,21 @@
 - name: Deploying metric server
   shell: kubectl apply -f {{ metric_server_kubernetes_deploy_manifestUrl }}
 
-- name: Creating CA key"
+- name: Creating CA key
   shell: kubeadm init phase upload-certs --upload-certs | grep -v certs
   register: K8S_KEY
 
-- name: Creating a join control plane command type
+- name: Creating a join control plane command
   shell:  kubeadm token create --print-join-command --certificate-key {{ K8S_KEY.stdout }}
   register: K8S_JOIN_MASTER
 
-- name: Creating a join worker command type
+- name: Creating a join worker command
   shell:  kubeadm token create --print-join-command
   register: K8S_JOIN_NODE
 
 - name: Adding K8S tokens to host holder
   add_host:
-    name:   K8S_TOKEN_HOLDER
-    key:    "{{ K8S_KEY.stdout }}"
+    name: K8S_TOKEN_HOLDER
+    key: "{{ K8S_KEY.stdout }}"
     joink8smaster: "{{ K8S_JOIN_MASTER.stdout }}"
     joink8snode: "{{ K8S_JOIN_NODE.stdout }}"

@@ -1,21 +1,9 @@
 ---
-- name: Putting HTTP Proxy Server Address in /etc/environment
-  lineinfile:
-    path: /etc/environment
-    line: export http_proxy=http://{{ PROXY_SERVER_ADDRESS }}:{{ PROXY_SERVER_PORT }}
-  when: PROXY | bool
-
-- name: Putting HTTPS Proxy Server Address in /etc/environment
-  lineinfile:
-    path: /etc/environment
-    line: export https_proxy=http://{{ PROXY_SERVER_ADDRESS }}:{{ PROXY_SERVER_PORT }}
-  when: PROXY | bool
-
-- name: Exporting no_proxy ip addresses
-  lineinfile:
-    path: /etc/environment
-    line: export no_proxy='{{ IP_ADDRESSES_NOT_IN_PROXY }}'
-  when: PROXY | bool
+- name: Puting SELinux in permissive mode
+  ansible.posix.selinux:
+    policy: targeted
+    state: permissive
+  when: ansible_facts['os_family'] == "RedHat"
 
 - name: RedHat | Starting FirewallD
   service:
@@ -52,12 +40,12 @@
     immediate: yes
     state: enabled
   loop:
-  - 22/tcp
-  - 6443/tcp
+  - '22/tcp'
+  - '6443/tcp'
   - 2379-2380/tcp
-  - 10250/tcp
-  - 10251/tcp
-  - 10252/tcp
+  - '10250/tcp'
+  - '10251/tcp'
+  - '10252/tcp'
   - 30000-32767/tcp
   - 6783-6784/udp
   when: FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
@@ -69,14 +57,14 @@
     proto: tcp
     state: enabled
   loop:
-  - 22
-  - 6443
+  - '22'
+  - '6443'
   - 2379:2380
-  - 10250
-  - 10251
-  - 10252
+  - '10250'
+  - '10251'
+  - '10252'
   - 30000:32767
-  - 6783
+  - '6783'
   when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
 
 - name: Ubuntu | UFW Rules UDP
@@ -221,9 +209,9 @@
 - name: Ubuntu | Installing Kubernetes packages
   package:
     name: [
-      'kubelet-{{ KUBERNETES_VERSION }}',
-      'kubeadm-{{ KUBERNETES_VERSION }}',
-      'kubectl-{{ KUBERNETES_VERSION }}'
+      'kubelet={{ KUBERNETES_VERSION }}-00',
+      'kubeadm={{ KUBERNETES_VERSION }}-00',
+      'kubectl={{ KUBERNETES_VERSION }}-00'
     ]
     state: present
   notify: "start and enable"

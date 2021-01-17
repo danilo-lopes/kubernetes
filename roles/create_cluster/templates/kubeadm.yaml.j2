@@ -5,4 +5,14 @@ kind: InitConfiguration
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
 kubernetesVersion: stable
+{% if HA_HAPROXY %}
 controlPlaneEndpoint: "{{LOADBALANCER}}:{{SECURITY_PORT}}"
+{% else %}
+controlPlaneEndpoint: "{{ hostvars[groups['HAPROXY_PRIMARY'][0]]['ansible_default_ipv4']['address'] }}"
+{% endif %}
+---
+{% if TLS_ENABLED %}
+kind: KubeletConfiguration
+apiVersion: kubelet.config.k8s.io/v1beta1
+serverTLSBootstrap: true
+{% endif %}

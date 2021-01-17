@@ -1,0 +1,9 @@
+---
+- name: Get CSRs
+  shell: kubectl get csr |grep -i pending |awk '{ print $1 }'
+  register: CSRS
+
+- name: Approve CSRs
+  shell: kubectl certificate approve {{ item }}
+  with_items:
+    - "{{ CSRS.stdout_lines }}"

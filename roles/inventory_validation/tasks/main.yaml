@@ -6,11 +6,15 @@
   when: SINGLE_HAPROXY | bool
 
 - assert:
+    { that: " '{{ HAPROXY_WEB_USER }}' "}
+  when: SINGLE_HAPROXY | bool
+
+- assert:
     { that: "not '{{ HA_HAPROXY }}' | bool"}
   when: SINGLE_HAPROXY | bool
 
 - assert:
-    { that: "'{SINGLE_HAPROXY}' | bool "}
+    { that: "'{{ SINGLE_HAPROXY }}' | bool "}
   when: SINGLE_HAPROXY | bool
 
 - name: Assertion for HaProxy HA Mode
@@ -20,9 +24,77 @@
   when: HA_HAPROXY | bool
 
 - assert:
-    { that: "'{{ HA_HAPROXY }}' | bool"}
+    { that: " '{{ HAPROXY_WEB_USER }}' "}
   when: HA_HAPROXY | bool
 
 - assert:
-    { that: "not '{SINGLE_HAPROXY}' | bool "}
+    { that: " '{{ HA_HAPROXY }}' | bool"}
   when: HA_HAPROXY | bool
+
+- assert:
+    { that: "not '{{ SINGLE_HAPROXY }}' | bool "}
+  when: HA_HAPROXY | bool
+
+- name: Assertion for Kubernetes Multi-Master
+  assert:
+    that:
+      - "groups['KUBERNETES_MASTERS'] | length >= 1"
+      - "groups['KUBERNETES_MASTER_INIT'] | length == 1"
+      - "groups['KUBERNETES_NODES'] | length >= 1"
+  when: MULTIMASTER_MODE | bool
+
+- assert:
+    { that: " '{{ MULTIMASTER_MODE }}' | bool" }
+  when: MULTIMASTER_MODE | bool
+
+- assert:
+    { that: " not '{{ SINGLE_MODE }}' | bool" }
+  when: MULTIMASTER_MODE | bool
+
+- assert:
+    { that: " '{{ LOADBALANCER }}' " }
+  when: MULTIMASTER_MODE | bool
+
+- assert:
+    { that: " '{{ SECURITY_PORT }}' " }
+  when: MULTIMASTER_MODE | bool
+
+- assert:
+    { that: " '{{ METALLB_RANGEIP_BEGIN }}' | length > 0"}
+  when: MULTIMASTER_MODE | bool
+
+- assert:
+    { that: " '{{ METALLB_RANGEIP_END }}' | length > 0"}
+  when: MULTIMASTER_MODE | bool
+
+- name: Assertion for Kubernetes Single-Mode
+  assert:
+    that:
+      - "groups['KUBERNETES_MASTER_INIT'] | length == 1"
+      - "groups['KUBERNETES_MASTERS'] | length == 0"
+      - "groups['KUBERNETES_NODES'] | length >= 1"
+  when: SINGLE_MODE | bool
+
+- assert:
+    { that: " not '{{ MULTIMASTER_MODE }}' | bool" }
+  when: SINGLE_MODE | bool
+
+- assert:
+    { that: " '{{ SINGLE_MODE }}' | bool" }
+  when: SINGLE_MODE | bool
+
+- assert:
+    { that: " not '{{ LOADBALANCER }}' " }
+  when: SINGLE_MODE | bool
+
+- assert:
+    { that: " not '{{ SECURITY_PORT }}' " }
+  when: SINGLE_MODE | bool
+
+- assert:
+    { that: " '{{ METALLB_RANGEIP_BEGIN }}' | length > 0"}
+  when: SINGLE_MODE | bool
+
+- assert:
+    { that: " '{{ METALLB_RANGEIP_END }}' | length > 0"}
+  when: SINGLE_MODE | bool

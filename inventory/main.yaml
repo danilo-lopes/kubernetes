@@ -1,46 +1,51 @@
 all:
   vars:
-    user: vagrant
+    USER: vagrant
+    # ansible_ssh_private_key_file:
 
-    HA_HAPROXY: 'True'
-    SINGLE_HAPROXY: 'False'
-    HAPROXY_WEB_USER: haproxy
-
+    ##- General Section
     FIREWALL: 'True'
 
-    PROXY: 'False'
-    PROXY_SERVER_ADDRESS: 192.168.15.178
-    PROXY_SERVER_PORT: 3128
-    IP_ADDRESSES_NOT_IN_PROXY: 'localhost,127.0.0.1,10.96.0.0/12'
+    ##- HaProxy Section
+    HA_HAPROXY: 'True'
+    SINGLE_HAPROXY: 'False'
 
+    HAPROXY_WEB_USER: haproxy
+
+    ##- Kubernetes Section
+    MULTIMASTER_MODE: 'True'
+    SINGLE_MODE: 'False'
+
+    TLS_ENABLED: 'True'
     KUBERNETES_VERSION: 1.18.8
     SECURITY_PORT: 6443
-    LOADBALANCER: 192.168.15.161
-    METALLB_RANGEIP_BEGIN: 192.168.15.162
-    METALLB_RANGEIP_END: 192.168.15.165
+    LOADBALANCER: 192.168.15.36
+    METALLB_RANGEIP_BEGIN: 192.168.15.37
+    METALLB_RANGEIP_END: 192.168.15.40
 
+  ##- Inventory
   children:
 
     k8s:
       children:
         KUBERNETES_MASTER_INIT:
           hosts:
-            192.168.15.158
+            192.168.15.32
 
         KUBERNETES_MASTERS:
           hosts:
-            192.168.15.155:
+            192.168.15.33:
 
         KUBERNETES_NODES:
           hosts:
-            192.168.15.156:
-            192.168.15.157:
+            192.168.15.34:
+            192.168.15.35:
 
     haproxy:
       children:
         HAPROXY_PRIMARY:
           hosts:
-            192.168.15.160
+            192.168.15.30
         HAPROXY_SECONDARY:
           hosts:
-            192.168.15.159
+            192.168.15.31
