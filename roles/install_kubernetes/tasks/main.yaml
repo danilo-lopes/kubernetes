@@ -6,35 +6,35 @@
   when: ansible_facts['os_family'] == "RedHat"
 
 - name: RedHat | Starting FirewallD
-  service:
+  systemd:
     name: firewalld
     state: stopped
     enabled: no
   when: not FIREWALL | bool and ansible_facts['os_family'] == "RedHat" 
 
 - name: RedHat | Starting FirewallD
-  service:
+  systemd:
     name: firewalld
     state: started
     enabled: yes
   when: FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
 
 - name: Ubuntu | Stopping UFW
-  service:
+  systemd:
     name: ufw
     state: stopped
     enabled: no
   when: not FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
 
 - name: Ubuntu | Starting UFW
-  service:
+  systemd:
     name: ufw
     state: started
     enabled: yes
   when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
 
 - name: RedHat | Applying FirewallD rules
-  firewalld:
+  ansible.posix.firewalld:
     port: "{{ item }}"
     permanent: yes
     immediate: yes
@@ -78,11 +78,11 @@
   when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
 
 - name: RedHat | Adding FirewallD Mascared
-  firewalld:
+  ansible.posix.firewalld:
     masquerade: 'True'
-    state: enabled
     permanent: 'True'
     immediate: 'True'
+    state: enabled
   when: FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
 
 - name: RedHat | Restarting FirewallD service
@@ -105,7 +105,7 @@
     state: present
 
 - name: Set IPV4 bridge
-  sysctl:
+  ansible.posix.sysctl:
     name: net.bridge.bridge-nf-call-iptables
     value: '1'
     sysctl_file: /etc/sysctl.conf
@@ -114,7 +114,7 @@
     reload: yes
 
 - name: Set IPV6 bridge
-  sysctl:
+  ansible.posix.sysctl:
     name: net.bridge.bridge-nf-call-ip6tables
     value: '1'
     sysctl_file: /etc/sysctl.conf
@@ -123,7 +123,7 @@
     reload: yes
 
 - name: Set IPV4 forward in sysctl.conf
-  sysctl:
+  ansible.posix.sysctl:
     name: net.ipv4.ip_forward
     value: '1'
     sysctl_file: /etc/sysctl.conf
@@ -173,15 +173,6 @@
   file:
     path: /etc/systemd/system/docker.service.d
     state: directory
-
-- name: Adding Docker Proxy Configuration file
-  template:
-    src: docker-proxy.conf.j2
-    dest: /etc/systemd/system/docker.service.d/proxy.conf
-    mode: 0644
-    owner: root
-    group: root
-  when: PROXY | bool
 
 - name: Disabling SWAP
   replace:

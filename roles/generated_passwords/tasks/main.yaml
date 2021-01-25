@@ -1,8 +1,11 @@
 ---
-- name: Keep Alive Password
+- name: Keepalive Password
   debug:
     msg: "{{ hostvars['PASSWORD_HOLDER']['KEEP_AVALIVE_PASSWORD_AUTH'] }}"
+  when: CLUSTER_HAPROXY | bool
 
 - name: HaProxy Web Login Password
   debug:
     msg: "{{ hostvars['PASSWORD_HOLDER']['HAPROXY_WEB_CONSOLE_PASSWORD'] }}"
+  when: WEB_ADMINISTRATION_HAPROXY_ENABLED | bool
+

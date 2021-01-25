@@ -1,6 +1,7 @@
 ## On-Premises
 
-O playbook Ansible contém um inventário onde é inserido os endereços das máquinas e variaveis de ambiente, e é divido em roles que contém objetivos específicos.
+O playbook Ansible contém um inventário onde é inserido os endereços das máquinas e variaveis de ambiente, e é divido em 
+roles que contém objetivos específicos.
 
 **Das funcionalidades do playbook:**
 
@@ -38,14 +39,20 @@ O playbook Ansible contém um inventário onde é inserido os endereços das má
 
 **Das roles:**
 
-* **create_cluster** &rightarrow; Faz o `kubeadm init` do cluster, gera CRS's, faz deploy do metallb, ingress, weave-net e etc. Gera o comando de realizar *join* no cluster. (Obs. Essa role roda em apenas uma maquina, que será escolhida como kubernetes_master_init)
+* **create_cluster** &rightarrow; Faz o `kubeadm init` do cluster, gera CRS's, faz deploy do metallb, ingress, 
+weave-net e etc. Gera o comando de realizar *join* no cluster. (Obs. Essa role roda em apenas uma maquina,
+que será escolhida como kubernetes_master_init)
 
 * **generated_passwords** &rightarrow; Gera as credenciais necessárias para qualquer serviço que será usado no playbook
 
-* **haproxy** &rightarrow; Disponibiliza o HaProxy em modo HA ou single mode, o `init` do Kubernetes é feito através do *Virtual IP* que é declarado no inventário caso seja em HA. Toda a comunicação do cluster é feita através dele.
+* **haproxy** &rightarrow; Disponibiliza o HaProxy em modo HA ou single mode, o `init` do Kubernetes é feito através do 
+*Virtual IP* que é declarado no inventário caso seja em HA. Toda a comunicação do cluster é feita através dele.
 
-* **install_kubernetes** &rightarrow; Instala os binários do Kubernetes, docker e o que for necessário para o funcionamento eficiente do Kubernetes nas máquinas. Configurações de firewall, serviço e etc.
+* **install_kubernetes** &rightarrow; Instala os binários do Kubernetes, docker e o que for necessário para o 
+funcionamento eficiente do Kubernetes nas máquinas. Configurações de firewall, serviço e etc.
 
-* **join_masters** &rightarrow; Essa role tem apenas uma função, interpolar o comando de `join` para *control plane* que a role create_cluster disponibiliza e executar nas máquinas que terão o papel de *master*
+* **join_masters** &rightarrow; Essa role tem apenas uma função, interpolar o comando de `join` para *control plane* que 
+a role create_cluster disponibiliza e executar nas máquinas que terão o papel de *master*
 
-* **join_workers** &rightarrow; Essa role tem apenas uma função também, interpolar o comando de `join` para *worker* que a role create_cluster disponibiliza e executar nas máquinas que terão o papel de *worker*
+* **join_workers** &rightarrow; Essa role tem apenas uma função também, interpolar o comando de `join` para *worker* que 
+a role create_cluster disponibiliza e executar nas máquinas que terão o papel de *worker*

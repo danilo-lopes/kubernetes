@@ -1,24 +1,24 @@
 ---
 - name: restart keepalived
-  service:
+  systemd:
     name: keepalived
     state: restarted
   listen: "restart keepalived"
 
 - name: enable keepalived
-  service:
+  systemd:
     name: keepalived
     enabled: yes
   listen: "enable keepalived"
 
 - name: restart haproxy
-  service:
+  systemd:
     name: haproxy
     state: restarted
   listen: "restart haproxy"
 
 - name: enable haproxy
-  service:
+  systemd:
     name: haproxy
     enabled: yes
   listen: "enable haproxy"

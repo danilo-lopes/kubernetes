@@ -1,40 +1,40 @@
 ---
 - name: Puting SELinux in permissive mode
-  selinux:
+  ansible.posix.selinux:
     policy: targeted
     state: permissive
   when: ansible_facts['os_family'] == "RedHat"
 
 - name: RedHat | Stopping FirewallD
-  service:
+  systemd:
     name: firewalld
     state: stopped
     enabled: no
   when: not FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
 
 - name: Ubuntu | Stopping UFW
-  service:
+  systemd:
     name: ufw
     state: stopped
     enabled: no
   when: not FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
 
 - name: RedHat | Starting FirewallD
-  service:
+  systemd:
     name: firewalld
     state: started
     enabled: yes
   when: FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
 
 - name: Ubuntu | Starting UFW
-  service:
+  systemd:
     name: ufw
     state: started
     enabled: yes
   when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
 
 - name: RedHat | Applying FirewallD rules
-  firewalld:
+  ansible.posix.firewalld:
     port: "{{ item }}"
     permanent: 'True'
     immediate: 'True'
@@ -58,22 +58,22 @@
   when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
 
 - name: RedHat | Applying FirewallD rules for VRRP Multi-Cast
-  firewalld:
+  ansible.posix.firewalld:
     source: 224.0.0.18
     permanent: 'True'
     immediate: 'True'
     state: enabled
-  when: FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
+  when: FIREWALL | bool and CLUSTER_HAPROXY | bool and ansible_facts['os_family'] == "RedHat"
 
 - name: Ubuntu | Applying UFW rules for VRRP Multi-Cast
   ufw:
     rule: allow
     dest: 224.0.0.18
     state: enabled
-  when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
+  when: FIREWALL | bool and CLUSTER_HAPROXY | bool and ansible_facts['distribution'] == "Ubuntu"
 
 - name: RedHat | Adding FirewallD Mascared
-  firewalld:
+  ansible.posix.firewalld:
     masquerade: 'True'
     permanent: 'True'
     immediate: 'True'
@@ -103,6 +103,7 @@
   package:
     name: keepalived
     state: present
+  when: CLUSTER_HAPROXY | bool
 
 - name: Starting HaProxy service
   service:
@@ -111,13 +112,14 @@
   notify: "enable haproxy"
 
 - name: Starting KeepaliveD service
-  service:
+  systemd:
     name: keepalived
     state: started
   notify: "enable keepalived"
+  when: CLUSTER_HAPROXY | bool
 
 - name: Setting IPv4 forward in sysctl.conf
-  sysctl:
+  ansible.posix.sysctl:
     name: net.ipv4.ip_forward
     value: '1'
     sysctl_file: /etc/sysctl.conf
@@ -126,7 +128,7 @@
     reload: yes
 
 - name: Seting IPV4 bind in sysctl.conf
-  sysctl:
+  ansible.posix.sysctl:
     name: net.ipv4.ip_nonlocal_bind
     value: '1'
     sysctl_file: /etc/sysctl.conf
@@ -138,9 +140,8 @@
   template:
     src: keepalived.cfg.j2
     dest: /etc/keepalived/keepalived.conf
-  vars:
-    priority_id: 100
   notify: "restart keepalived"
+  when: CLUSTER_HAPROXY | bool
 
 - name: Configuring HaProxy
   template:

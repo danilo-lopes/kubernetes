@@ -7,21 +7,23 @@ all:
     FIREWALL: 'True'
 
     ##- HaProxy Section
-    HA_HAPROXY: 'True'
-    SINGLE_HAPROXY: 'False'
+    CLUSTER_HAPROXY: 'False'
+    SINGLE_HAPROXY: 'True'
 
+    WEB_ADMINISTRATION_HAPROXY_ENABLED: 'False'
     HAPROXY_WEB_USER: haproxy
 
     ##- Kubernetes Section
-    MULTIMASTER_MODE: 'True'
-    SINGLE_MODE: 'False'
-
-    TLS_ENABLED: 'True'
+    MULTIMASTER_MODE: 'False'
+    SINGLE_MODE: 'True'
     KUBERNETES_VERSION: 1.18.8
     SECURITY_PORT: 6443
+
     LOADBALANCER: 192.168.15.36
     METALLB_RANGEIP_BEGIN: 192.168.15.37
     METALLB_RANGEIP_END: 192.168.15.40
+
+    TLS_ENABLED: 'True'
 
   ##- Inventory
   children:
@@ -34,7 +36,7 @@ all:
 
         KUBERNETES_MASTERS:
           hosts:
-            192.168.15.33:
+
 
         KUBERNETES_NODES:
           hosts:
@@ -48,4 +50,3 @@ all:
             192.168.15.30
         HAPROXY_SECONDARY:
           hosts:
-            192.168.15.31

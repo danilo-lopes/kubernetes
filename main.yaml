@@ -46,7 +46,7 @@
   become: yes
   user: "{{ USER }}"
   roles:
-  - { role: join_masters, when: MULTIMASTER_MODE |bool }
+  - { role: join_masters, when: MULTIMASTER_MODE | bool }
 
 - hosts: KUBERNETES_NODES
   become: yes
@@ -58,4 +58,4 @@
   become: yes
   user: "{{ USER }}"
   roles:
-  - { role: csr_approve, when: TLS_ENABLED |bool }
+  - { role: csr_approve, when: TLS_ENABLED | bool }

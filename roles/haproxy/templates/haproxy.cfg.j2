@@ -10,6 +10,7 @@ defaults
   timeout server 60s
   timeout client 60s
 
+{% if WEB_ADMINISTRATION_HAPROXY_ENABLED | bool %}
 listen stats 
   bind :1936
   mode http
@@ -18,9 +19,15 @@ listen stats
   stats realm Haproxy\ Statistics
   stats uri /
   stats auth {{ HAPROXY_WEB_USER }}:{{ hostvars['PASSWORD_HOLDER']['HAPROXY_WEB_CONSOLE_PASSWORD'] }}
+{% endif %}
 
 frontend KUBERNETES
+{% if CLUSTER_HAPROXY | bool %}
   bind {{ LOADBALANCER }}:{{ SECURITY_PORT }}
+{% endif %}
+{% if SINGLE_HAPROXY | bool %}
+  bind {{ ansible_default_ipv4.address }}:{{ SECURITY_PORT }}
+{% endif %}
   option tcplog
   mode tcp
   default_backend KUBERNETES_MASTER_NODES
@@ -29,11 +36,11 @@ backend KUBERNETES_MASTER_NODES
   mode tcp
   balance roundrobin
   option tcp-check
-  {% if groups['KUBERNETES_MASTERS'] | length %}
-  {% for server in groups['KUBERNETES_MASTERS'] %}
+{% if groups['KUBERNETES_MASTERS'] | length %}
+{% for server in groups['KUBERNETES_MASTERS'] %}
   server {{server}} {{server}}:{{SECURITY_PORT}} check fall 3 rise 2
-  {% endfor %}
-  {% endif %}
-  {% if groups['KUBERNETES_MASTER_INIT'] | length %}
+{% endfor %}
+{% endif %}
+{% if groups['KUBERNETES_MASTER_INIT'] | length %}
   server {{ groups['KUBERNETES_MASTER_INIT'][0] }} {{ groups['KUBERNETES_MASTER_INIT'][0] }}:{{SECURITY_PORT}} check fall 3 rise 2
-  {% endif %}
+{% endif %}

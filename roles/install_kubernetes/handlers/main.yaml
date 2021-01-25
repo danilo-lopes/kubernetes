@@ -1,24 +1,24 @@
 ---
 - name: Enabling Docker
-  service: 
+  systemd:
     name: docker 
     enabled: yes
   listen: "start and enable"
 
 - name: Starting Docker service
-  service: 
+  systemd:
     name: docker 
     state: started
   listen: "start and enable"
 
 - name: Enabling Kubelet
-  service: 
+  systemd:
     name: kubelet 
     enabled: yes
   listen: "start and enable"
 
 - name: Starting Kubelet service
-  service: 
+  systemd:
     name: kubelet 
     state: started
   listen: "start and enable"

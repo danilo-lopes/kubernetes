@@ -3,37 +3,41 @@
   assert:
     that:
       - "groups['haproxy'] | length == 1"
-  when: SINGLE_HAPROXY | bool
-
-- assert:
-    { that: " '{{ HAPROXY_WEB_USER }}' "}
-  when: SINGLE_HAPROXY | bool
-
-- assert:
-    { that: "not '{{ HA_HAPROXY }}' | bool"}
+      - "groups['HAPROXY_PRIMARY'] | length == 1"
+      - "groups['HAPROXY_SECONDARY'] | length == 0"
   when: SINGLE_HAPROXY | bool
 
 - assert:
     { that: "'{{ SINGLE_HAPROXY }}' | bool "}
   when: SINGLE_HAPROXY | bool
 
-- name: Assertion for HaProxy HA Mode
-  assert:
-    that:
-      - "groups['haproxy'] | length == 2"
-  when: HA_HAPROXY | bool
+- assert:
+    { that: "not '{{ CLUSTER_HAPROXY }}' | bool"}
+  when: SINGLE_HAPROXY | bool
 
 - assert:
     { that: " '{{ HAPROXY_WEB_USER }}' "}
-  when: HA_HAPROXY | bool
+  when: WEB_ADMINISTRATION_HAPROXY_ENABLED | bool and SINGLE_HAPROXY | bool
+
+- name: Assertion for Cluster HaProxy Mode
+  assert:
+    that:
+      - "groups['haproxy'] | length == 2"
+      - "groups['HAPROXY_PRIMARY'] | length == 1"
+      - "groups['HAPROXY_SECONDARY'] | length == 1"
+  when: CLUSTER_HAPROXY | bool
 
 - assert:
-    { that: " '{{ HA_HAPROXY }}' | bool"}
-  when: HA_HAPROXY | bool
+    { that: " '{{ CLUSTER_HAPROXY }}' | bool"}
+  when: CLUSTER_HAPROXY | bool
 
 - assert:
     { that: "not '{{ SINGLE_HAPROXY }}' | bool "}
-  when: HA_HAPROXY | bool
+  when: CLUSTER_HAPROXY | bool
+
+- assert:
+    { that: " '{{ HAPROXY_WEB_USER }}' "}
+  when: WEB_ADMINISTRATION_HAPROXY_ENABLED | bool and CLUSTER_HAPROXY | bool
 
 - name: Assertion for Kubernetes Multi-Master
   assert:
@@ -76,19 +80,19 @@
   when: SINGLE_MODE | bool
 
 - assert:
-    { that: " not '{{ MULTIMASTER_MODE }}' | bool" }
-  when: SINGLE_MODE | bool
-
-- assert:
     { that: " '{{ SINGLE_MODE }}' | bool" }
   when: SINGLE_MODE | bool
 
 - assert:
-    { that: " not '{{ LOADBALANCER }}' " }
+    { that: " not '{{ MULTIMASTER_MODE }}' | bool" }
   when: SINGLE_MODE | bool
 
 - assert:
-    { that: " not '{{ SECURITY_PORT }}' " }
+    { that: " '{{ LOADBALANCER }}' " }
+  when: SINGLE_MODE | bool
+
+- assert:
+    { that: " '{{ SECURITY_PORT }}' " }
   when: SINGLE_MODE | bool
 
 - assert:
