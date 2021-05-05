@@ -1,5 +1,17 @@
 ---
-- name: Puting SELinux in permissive mode
+- name: Disabling SWAP
+  replace:
+    path: /etc/fstab
+    regexp: '^(\s*)([^#\n]+\s+)(\w+\s+)swap(\s+.*)$'
+    replace: '#\1\2\3swap\4'
+    backup: yes
+
+- name: Turning off Swap
+  shell: | 
+    swapoff -a
+  register: swapoff
+
+- name: RedHat | Puting SELinux in permissive mode
   ansible.posix.selinux:
     policy: targeted
     state: permissive
@@ -10,7 +22,7 @@
     name: firewalld
     state: stopped
     enabled: no
-  when: not FIREWALL | bool and ansible_facts['os_family'] == "RedHat" 
+  when: not FIREWALL | bool and ansible_facts['os_family'] == "RedHat"
 
 - name: RedHat | Starting FirewallD
   systemd:
@@ -99,46 +111,109 @@
     name: ufw
   when: FIREWALL | bool and ansible_facts['distribution'] == "Ubuntu"
 
-- name: Add br_netfilter module
+- name: Enabling br_netfilter Kernel Module
   modprobe:
     name: br_netfilter
     state: present
 
-- name: Set IPV4 bridge
+- name: Enabling overlay Kernel Module
+  modprobe:
+    name: overlay
+    state: present
+
+- name: Making br_netfilter Module Permanent
+  lineinfile:
+    path: /etc/modules
+    line: br_netfilter
+
+- name: Making overlay Module Permanent
+  lineinfile:
+    path: /etc/modules
+    line: overlay
+
+- name: Enabling IPv4 bridge Kernel Module
   ansible.posix.sysctl:
     name: net.bridge.bridge-nf-call-iptables
     value: '1'
-    sysctl_file: /etc/sysctl.conf
+    sysctl_file: /etc/sysctl.d/kubernetes.conf
     sysctl_set: yes
     state: present
     reload: yes
 
-- name: Set IPV6 bridge
+- name: Enabling IPv6 bridge Kernel Module
   ansible.posix.sysctl:
     name: net.bridge.bridge-nf-call-ip6tables
     value: '1'
-    sysctl_file: /etc/sysctl.conf
+    sysctl_file: /etc/sysctl.d/kubernetes.conf
     sysctl_set: yes
     state: present
     reload: yes
 
-- name: Set IPV4 forward in sysctl.conf
+- name: Enabling IPv4 forward Kernel Module
   ansible.posix.sysctl:
     name: net.ipv4.ip_forward
     value: '1'
-    sysctl_file: /etc/sysctl.conf
+    sysctl_file: /etc/sysctl.d/kubernetes.conf
     sysctl_set: yes
     state: present
     reload: yes
 
-- name: Installing Docker
-  shell: curl -fsSL https://get.docker.com | bash -
+- name: Ubuntu | Adding CRI-O GPG Key
+  apt_key:
+    url: "{{ item }}"
+    state: present
+  loop:
+  - 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/Release.key'
+  - 'https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:1.21/xUbuntu_18.04/Release.key'
+  when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
 
-- name: RedHat | Starting Docker
-  systemd:
-    name: docker
-    state: started
-  when: ansible_facts['os_family'] == "RedHat"
+- name: Ubuntu | Adding CRI-O Repository
+  ansible.builtin.apt_repository:
+    repo: "{{ item }}"
+    state: present
+  loop:
+  - 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/ /'
+  - 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.21/xUbuntu_18.04/ /'
+  when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
+
+- name: Ubuntu | Installing CRI-O
+  package:
+    name: [
+      'cri-o',
+      'cri-o-runc',
+      'cri-tools',
+      'runc'
+    ]
+    update_cache: true
+    state: present
+  notify: "enable crio service"
+  when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
+
+- name: Creating CNI Directory
+  file:
+    path: /etc/cni/net.d
+    state: directory
+
+- name: Puting CRIO File into /etc/cni/net.d/
+  copy:
+    src: ../files/crio.conf
+    dest: /etc/cni/net.d/10-crio.conf
+    mode: 0644
+  when: CRIO | bool
+
+- name: Ubuntu | Puting Container Storage config into /etc/containers
+  copy:
+    src: ../files/storage.conf
+    dest: /etc/containers/storage.conf
+    mode: 0644
+  when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
+
+- name: Ubuntu | Puting Kubelet Config for CRIO
+  copy:
+    src: ../files/crio-kubelet.conf
+    dest: /etc/default/kubelet
+    mode: 0644
+  when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
 
 - name: Ubuntu | Adding Kubernetes APT signing key
   apt_key:
@@ -164,33 +239,12 @@
     exclude: kubelet kubeadm kubectl
   when: ansible_facts['os_family'] == "RedHat"
 
-- name: Coping Docker config file
-  copy:
-    src: ../files/daemon.json
-    dest: /etc/docker/daemon.json
-
-- name: Creating Docker service directory
-  file:
-    path: /etc/systemd/system/docker.service.d
-    state: directory
-
-- name: Disabling SWAP
-  replace:
-    path: /etc/fstab
-    regexp: '^(\s*)([^#\n]+\s+)(\w+\s+)swap(\s+.*)$'
-    replace: '#\1\2\3swap\4'
-    backup: yes
-
-- name: Turning off Swap
-  shell: swapoff -a
-  register: swapoff
-
 - name: RedHat | Installing Kubernetes packages
   package:
     name: [
-      'kubelet-{{ KUBERNETES_VERSION }}',
-      'kubeadm-{{ KUBERNETES_VERSION }}',
-      'kubectl-{{ KUBERNETES_VERSION }}'
+      'kubelet-1.21.0',
+      'kubeadm-1.21.0',
+      'kubectl-1.21.0'
     ]
     state: present
     disable_excludes: Kubernetes
@@ -200,21 +254,22 @@
 - name: Ubuntu | Installing Kubernetes packages
   package:
     name: [
-      'kubelet={{ KUBERNETES_VERSION }}-00',
-      'kubeadm={{ KUBERNETES_VERSION }}-00',
-      'kubectl={{ KUBERNETES_VERSION }}-00'
+      'kubelet=1.21.0-00',
+      'kubeadm=1.21.0-00',
+      'kubectl=1.21.0-00'
     ]
     state: present
-  notify: "start and enable"
+  notify: "enable kubelet service"
   when: ansible_facts['distribution'] == "Ubuntu"
 
-- name: Restarting docker service
+- name: Restarting CRI-O Service
   systemd:
-    name: docker
+    name: crio
     state: restarted
     daemon_reload: yes
+  when: CRIO | bool
 
-- name: Restarting kubelet service
+- name: Restarting Kubelet Service
   systemd:
     name: kubelet
     state: restarted

@@ -1,18 +1,23 @@
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
 ---
-
 apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
 kubernetesVersion: stable
-{% if CLUSTER_HAPROXY | bool%}
-controlPlaneEndpoint: "{{ LOADBALANCER }}:{{ SECURITY_PORT }}"
+{% if CLUSTER_HAPROXY | bool %}
+controlPlaneEndpoint: "{{ VRRP_IP_ADDRESS }}:{{ KUBERNETES_SECURITY_PORT }}"
 {% endif %}
 {% if SINGLE_HAPROXY | bool %}
-controlPlaneEndpoint: "{{ hostvars[groups['HAPROXY_PRIMARY'][0]]['ansible_default_ipv4']['address'] }}:{{ SECURITY_PORT }}"
+controlPlaneEndpoint: "{{ hostvars[groups['HAPROXY_PRIMARY'][0]]['ansible_default_ipv4']['address'] }}:{{ KUBERNETES_SECURITY_PORT }}"
+{% endif %}
+{% if KUBERNTES_SINGLE_MODE | bool and not HAPROXY_ENABLED | bool %}
+controlPlaneEndpoint: "{{ hostvars[groups['KUBERNETES_MASTER_INIT'][0]]['ansible_default_ipv4']['address'] }}:{{ KUBERNETES_SECURITY_PORT }}"
+{% endif %}
+{% if KUBERNETES_MULTIMASTER_MODE | bool and not HAPROXY_ENABLED | bool %}
+controlPlaneEndpoint: "{{ hostvars[groups['KUBERNETES_MASTER_INIT'][0]]['ansible_default_ipv4']['address'] }}:{{ KUBERNETES_SECURITY_PORT }}"
 {% endif %}
 ---
-{% if TLS_ENABLED %}
+{% if TLS_ENABLED | bool %}
 kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1
 serverTLSBootstrap: true

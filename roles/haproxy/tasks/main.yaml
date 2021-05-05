@@ -122,7 +122,7 @@
   ansible.posix.sysctl:
     name: net.ipv4.ip_forward
     value: '1'
-    sysctl_file: /etc/sysctl.conf
+    sysctl_file: /etc/sysctl.d/haproxy.conf
     sysctl_set: yes
     state: present
     reload: yes
@@ -131,10 +131,11 @@
   ansible.posix.sysctl:
     name: net.ipv4.ip_nonlocal_bind
     value: '1'
-    sysctl_file: /etc/sysctl.conf
+    sysctl_file: /etc/sysctl.d/haproxy.conf
     sysctl_set: yes
     state: present
     reload: yes
+  when: CLUSTER_HAPROXY | bool
 
 - name: Configuring KeepaliveD
   template:

@@ -5,19 +5,39 @@
       - "groups['haproxy'] | length == 1"
       - "groups['HAPROXY_PRIMARY'] | length == 1"
       - "groups['HAPROXY_SECONDARY'] | length == 0"
-  when: SINGLE_HAPROXY | bool
+    fail_msg: "The host inventory 'HAPROXY_SECONDARY' must be nil"
+    success_msg: "Passed"
+  when: SINGLE_HAPROXY | bool and HAPROXY_ENABLED | bool
 
 - assert:
-    { that: "'{{ SINGLE_HAPROXY }}' | bool "}
-  when: SINGLE_HAPROXY | bool
+    that: 
+    - SINGLE_HAPROXY | bool
+    fail_msg: "The variable 'SINGLE_HAPROXY' is not True"
+    success_msg: "Passed"
+  when: SINGLE_HAPROXY | bool and HAPROXY_ENABLED | bool
 
 - assert:
-    { that: "not '{{ CLUSTER_HAPROXY }}' | bool"}
-  when: SINGLE_HAPROXY | bool
+    that: 
+    - not CLUSTER_HAPROXY | bool
+    fail_msg: "The variable 'CLUSTER_HAPROXY' is not False"
+    success_msg: "Passed"
+  when: SINGLE_HAPROXY | bool and HAPROXY_ENABLED | bool
 
 - assert:
-    { that: " '{{ HAPROXY_WEB_USER }}' "}
-  when: WEB_ADMINISTRATION_HAPROXY_ENABLED | bool and SINGLE_HAPROXY | bool
+    that: 
+    - HAPROXY_ENABLED | bool
+    fail_msg: "The variable 'HAPROXY_ENABLED' is not True"
+    success_msg: "Passed"
+  when: SINGLE_HAPROXY | bool and HAPROXY_ENABLED | bool
+
+- assert:
+    that: 
+    - HAPROXY_WEB_USER
+    fail_msg: "The variable 'HAPROXY_WEB_USER' can't be nil"
+    success_msg: "Passed"
+  when: SINGLE_HAPROXY | bool and WEB_ADMINISTRATION_HAPROXY_ENABLED | bool and HAPROXY_ENABLED | bool
+
+#################################################################################################################################################################
 
 - name: Assertion for Cluster HaProxy Mode
   assert:
@@ -25,19 +45,72 @@
       - "groups['haproxy'] | length == 2"
       - "groups['HAPROXY_PRIMARY'] | length == 1"
       - "groups['HAPROXY_SECONDARY'] | length == 1"
-  when: CLUSTER_HAPROXY | bool
+    fail_msg: "The host inventory 'HAPROXY_PRIMARY' and 'HAPROXY_SECONDARY' can't be nil"
+    success_msg: "Passed"
+  when: CLUSTER_HAPROXY | bool and HAPROXY_ENABLED | bool
 
 - assert:
-    { that: " '{{ CLUSTER_HAPROXY }}' | bool"}
-  when: CLUSTER_HAPROXY | bool
+    that: 
+    - CLUSTER_HAPROXY | bool
+    fail_msg: "The variable 'CLUSTER_HAPROXY' is not True"
+    success_msg: "Passed"
+  when: CLUSTER_HAPROXY | bool and HAPROXY_ENABLED | bool
 
 - assert:
-    { that: "not '{{ SINGLE_HAPROXY }}' | bool "}
-  when: CLUSTER_HAPROXY | bool
+    that: 
+    - not SINGLE_HAPROXY | bool
+    fail_msg: "The variable 'SINGLE_HAPROXY' is not False"
+    success_msg: "Passed"
+  when: CLUSTER_HAPROXY | bool and HAPROXY_ENABLED | bool
 
 - assert:
-    { that: " '{{ HAPROXY_WEB_USER }}' "}
-  when: WEB_ADMINISTRATION_HAPROXY_ENABLED | bool and CLUSTER_HAPROXY | bool
+    that: 
+    - HAPROXY_ENABLED | bool
+    fail_msg: "The variable 'HAPROXY_ENABLED' is not True"
+    success_msg: "Passed"
+  when: CLUSTER_HAPROXY | bool and HAPROXY_ENABLED | bool
+
+- assert:
+    that: 
+    - HAPROXY_WEB_USER
+    fail_msg: "The variable 'HAPROXY_WEB_USER' can't be nil"
+    success_msg: "Passed"
+  when: CLUSTER_HAPROXY | bool and WEB_ADMINISTRATION_HAPROXY_ENABLED | bool and HAPROXY_ENABLED | bool
+
+#################################################################################################################################################################
+
+- name: Assertion Without HaProxy
+  assert:
+    that:
+      - "groups['haproxy'] | length == 0"
+      - "groups['HAPROXY_PRIMARY'] | length == 0"
+      - "groups['HAPROXY_SECONDARY'] | length == 0"
+    fail_msg: "The host inventory 'HAPROXY_PRIMARY' and 'HAPROXY_SECONDARY' must be nil"
+    success_msg: "Passed"
+  when: not HAPROXY_ENABLED | bool
+
+- assert:
+    that: 
+    - not HAPROXY_ENABLED | bool
+    fail_msg: "The variable 'HAPROXY_ENABLED' is not False"
+    success_msg: "Passed"
+  when: not HAPROXY_ENABLED | bool
+
+- assert:
+    that: 
+    - not CLUSTER_HAPROXY | bool
+    fail_msg: "The variable 'CLUSTER_HAPROXY' is not False"
+    success_msg: "Passed"
+  when: not HAPROXY_ENABLED | bool
+
+- assert:
+    that: 
+    - not SINGLE_HAPROXY | bool
+    fail_msg: "The variable 'SINGLE_HAPROXY' is not False"
+    success_msg: "Passed"
+  when: not HAPROXY_ENABLED | bool
+
+####################################################################################################################################################################
 
 - name: Assertion for Kubernetes Multi-Master
   assert:
@@ -45,31 +118,32 @@
       - "groups['KUBERNETES_MASTERS'] | length >= 1"
       - "groups['KUBERNETES_MASTER_INIT'] | length == 1"
       - "groups['KUBERNETES_NODES'] | length >= 1"
-  when: MULTIMASTER_MODE | bool
+    fail_msg: "The host inventory 'KUBERNETES_MASTERS' and 'KUBERNETES_MASTER_INIT' and 'KUBERNETES_NODES' can't be nil"
+    success_msg: "Passed"
+  when: KUBERNETES_MULTIMASTER_MODE | bool
 
 - assert:
-    { that: " '{{ MULTIMASTER_MODE }}' | bool" }
-  when: MULTIMASTER_MODE | bool
+    that: 
+    - KUBERNETES_MULTIMASTER_MODE | bool
+    fail_msg: "The variable 'KUBERNETES_MULTIMASTER_MODE' is not True"
+    success_msg: "Passed"
+  when: KUBERNETES_MULTIMASTER_MODE | bool
 
 - assert:
-    { that: " not '{{ SINGLE_MODE }}' | bool" }
-  when: MULTIMASTER_MODE | bool
+    that: 
+    - not KUBERNTES_SINGLE_MODE | bool
+    fail_msg: "The variable 'KUBERNTES_SINGLE_MODE' is not False"
+    success_msg: "Passed"
+  when: KUBERNETES_MULTIMASTER_MODE | bool
 
 - assert:
-    { that: " '{{ LOADBALANCER }}' " }
-  when: MULTIMASTER_MODE | bool
+    that: 
+    - KUBERNETES_SECURITY_PORT
+    fail_msg: "The variable 'KUBERNETES_SECURITY_PORT' can't be nil"
+    success_msg: "Passed"
+  when: KUBERNETES_MULTIMASTER_MODE | bool
 
-- assert:
-    { that: " '{{ SECURITY_PORT }}' " }
-  when: MULTIMASTER_MODE | bool
-
-- assert:
-    { that: " '{{ METALLB_RANGEIP_BEGIN }}' | length > 0"}
-  when: MULTIMASTER_MODE | bool
-
-- assert:
-    { that: " '{{ METALLB_RANGEIP_END }}' | length > 0"}
-  when: MULTIMASTER_MODE | bool
+#################################################################################################################################################################
 
 - name: Assertion for Kubernetes Single-Mode
   assert:
@@ -77,28 +151,45 @@
       - "groups['KUBERNETES_MASTER_INIT'] | length == 1"
       - "groups['KUBERNETES_MASTERS'] | length == 0"
       - "groups['KUBERNETES_NODES'] | length >= 1"
-  when: SINGLE_MODE | bool
+    fail_msg: "The host inventory 'KUBERNETES_MASTERS' must be nil and 'KUBERNETES_MASTER_INIT' can't be nil and 'KUBERNETES_NODES' can't be nil"
+    success_msg: "Passed"
+  when: KUBERNTES_SINGLE_MODE | bool
 
 - assert:
-    { that: " '{{ SINGLE_MODE }}' | bool" }
-  when: SINGLE_MODE | bool
+    that: 
+    - KUBERNTES_SINGLE_MODE | bool
+    fail_msg: "The variable 'KUBERNTES_SINGLE_MODE' is not True"
+    success_msg: "Passed"
+  when:  KUBERNTES_SINGLE_MODE | bool
 
 - assert:
-    { that: " not '{{ MULTIMASTER_MODE }}' | bool" }
-  when: SINGLE_MODE | bool
+    that: 
+    - not KUBERNETES_MULTIMASTER_MODE | bool
+    fail_msg: "The variable 'KUBERNETES_MULTIMASTER_MODE' is not False"
+    success_msg: "Passed"
+  when:  KUBERNTES_SINGLE_MODE | bool
 
 - assert:
-    { that: " '{{ LOADBALANCER }}' " }
-  when: SINGLE_MODE | bool
+    that: 
+    - KUBERNETES_SECURITY_PORT
+    fail_msg: "The variable 'KUBERNETES_SECURITY_PORT' can't be nil"
+    success_msg: "Passed"
+  when:  KUBERNTES_SINGLE_MODE | bool
 
-- assert:
-    { that: " '{{ SECURITY_PORT }}' " }
-  when: SINGLE_MODE | bool
+#################################################################################################################################################################
 
-- assert:
-    { that: " '{{ METALLB_RANGEIP_BEGIN }}' | length > 0"}
-  when: SINGLE_MODE | bool
+- name: Assertion for Container Runtime
+  assert:
+    that:
+      - CRIO
+    fail_msg: "The variables 'CRIO' can't be nil"
+    success_msg: "Passed"
+#################################################################################################################################################################
 
-- assert:
-    { that: " '{{ METALLB_RANGEIP_END }}' | length > 0"}
-  when: SINGLE_MODE | bool
+- name: Assertion for CRIO
+  assert:
+    that: 
+    - CRIO | bool
+    fail_msg: "The variable 'CRIO' must be True"
+    success_msg: "Passed"
+  when: CRIO | bool

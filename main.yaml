@@ -3,32 +3,34 @@
   hosts: localhost
   gather_facts: false
   roles:
-  - inventory_validation
+  - {
+      role: inventory_validation
+  }
 
-- name: Getting fects
-  hosts: all
-  user: "{{ USER }}"
-  become: yes
-  gather_facts: true
-
-- name: Generating Stack Passwords
+- name: Generating Environment Passwords
   hosts: localhost
   tasks:
   - add_host:
-      name: PASSWORD_HOLDER
+      name: env_passwords
       KEEP_AVALIVE_PASSWORD_AUTH: "{{ lookup('password', '/dev/null length=5') }}"
-      HAPROXY_WEB_CONSOLE_PASSWORD: "{{ lookup('password', '/dev/null length=16') }}"
+      HAPROXY_WEB_CONSOLE_PASSWORD: "{{ lookup('password', '/dev/null length=6') }}"
+    when: CLUSTER_HAPROXY | bool or WEB_ADMINISTRATION_HAPROXY_ENABLED | bool
 
-- name: Generated Stack Password
+- name: Passwords
   hosts: localhost
   roles:
-  - generated_passwords
+  - { role: passwords_generator,
+      when: CLUSTER_HAPROXY | bool or WEB_ADMINISTRATION_HAPROXY_ENABLED | bool
+  }
 
 - hosts: HAPROXY_PRIMARY, HAPROXY_SECONDARY
   become: yes
   user: "{{ USER }}"
   roles:
-  - haproxy
+  - {
+      role: haproxy,
+      when: HAPROXY_ENABLED | bool
+  }
 
 - hosts: KUBERNETES_MASTER_INIT, KUBERNETES_MASTERS, KUBERNETES_NODES
   become: yes
@@ -46,7 +48,10 @@
   become: yes
   user: "{{ USER }}"
   roles:
-  - { role: join_masters, when: MULTIMASTER_MODE | bool }
+  - {
+      role: join_masters,
+      when: KUBERNETES_MULTIMASTER_MODE | bool
+  }
 
 - hosts: KUBERNETES_NODES
   become: yes
@@ -58,4 +63,25 @@
   become: yes
   user: "{{ USER }}"
   roles:
-  - { role: csr_approve, when: TLS_ENABLED | bool }
+  - {
+      role: csr_approve,
+      when: TLS_ENABLED | bool
+  }
+
+- hosts: KUBERNETES_MASTER_INIT, KUBERNETES_NODES
+  become: yes
+  user: "{{ USER }}"
+  roles:
+  - {
+      role: reboot,
+      when: KUBERNTES_SINGLE_MODE | bool and not KUBERNETES_MULTIMASTER_MODE | bool
+  }
+
+- hosts: KUBERNETES_MASTER_INIT, KUBERNETES_MASTERS, KUBERNETES_NODES
+  become: yes
+  user: "{{ USER }}"
+  roles:
+  - {
+      role: reboot,
+      when: KUBERNETES_MULTIMASTER_MODE | bool and not KUBERNTES_SINGLE_MODE | bool
+  }

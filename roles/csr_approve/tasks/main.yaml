@@ -1,6 +1,7 @@
 ---
 - name: Get CSRs
-  shell: kubectl get csr |grep -i pending |awk '{ print $1 }'
+  shell: |
+    kubectl get csr |grep -i pending |awk '{ print $1 }'
   register: CSRS
 
 - name: Approve CSRs

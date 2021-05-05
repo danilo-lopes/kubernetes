@@ -1,0 +1,4 @@
+---
+- name: Rebooting Instances..
+  reboot:
+    reboot_timeout: 3600

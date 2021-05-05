@@ -1,6 +1,6 @@
 ---
 - name: Resetting kube config on node
-  command: |
+  shell: |
     kubeadm reset --force
   register: kubeadm_reset
 

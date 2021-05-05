@@ -1,18 +1,18 @@
 ---
-- name: Resetting Kube config on node
-  command: |
+- name: Reseting Kube config on node
+  shell: |
     kubeadm reset --force
   register: kubeadm_reset
 
-- name: Copy kubeadm.yaml to /root
+- name: Coping kubeadm.yaml to /root
   template:
     src: kubeadm.yaml.j2
     dest: /root/kubeadm.yaml
     mode: 0644
 
 - name: Inicializing Kubernetes cluster
-  command: |
-    kubeadm init --config /root/kubeadm.yaml --ignore-preflight-errors=NumCPU
+  shell: |
+    kubeadm init --config /root/kubeadm.yaml --upload-certs --ignore-preflight-errors=NumCPU
   register: kubeadm_init
 
 - name: Ensuring .kube directory exists
@@ -23,47 +23,57 @@
 - name: Symlinking kubectl admin.conf to ~/.kube/conf
   file:
     src: /etc/kubernetes/admin.conf
-    dest: ~/.kube/config
+    dest: /root/.kube/config
     state: link
 
-- name: Deploying WeaveNet network (1/1)
-  shell: kubectl apply -f {{ default_kubernetes_cni_weavenet_manifestUrl }}
-  register: deploying_weavenet
+- name: Deploying WeaveNet Network (1/1)
+  shell: |
+    kubectl apply -f {{ default_kubernetes_cni_weavenet_manifestUrl }}
 
-- name: Adding Metallb ConfigMap manifest to /root (0/4)
+- name: Adding Metallb ConfigMap manifest to /root (1/4)
   template:
     src: metallb-cm.yaml.j2
     dest: /root/metallb-cm.yaml
     mode: 0644
+  when: METALLB_ENABLED | bool
 
-- name: Deploying Metallb manifest (1/3)
-  shell: kubectl apply -f {{ metallb_kubernetes_namespace_manifestUrl }}
+- name: Deploying Metallb manifest v0.9.6 (2/4)
+  shell: | 
+    kubectl apply -f {{ metallb_kubernetes_namespace_manifestUrl }}
+  when: METALLB_ENABLED | bool
 
-- name: Deploying Metallb manifest (2/3)
-  shell: kubectl apply -f {{ metallb_kubernetes_deploy_manifestUrl }}
+- name: Deploying Metallb manifest v0.9.6 (3/4)
+  shell: | 
+      kubectl apply -f {{ metallb_kubernetes_deploy_manifestUrl }}
+  when: METALLB_ENABLED | bool
 
-- name: Deploying Metallb manifest (3/4)
-  shell: kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+- name: Generating Metallb secret (4/4)
+  shell: |
+    kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+  when: METALLB_ENABLED | bool
 
-- name: Deploying Metallb manifest (4/4)
-  shell: kubectl apply -f /root/metallb-cm.yaml
+- name: Deploying Metallb manifest v0.9.6 (4/4)
+  shell: | 
+    kubectl apply -f /root/metallb-cm.yaml
+  when: METALLB_ENABLED | bool
 
-- name: Deploying nginx ingress controller
-  shell: kubectl apply -f {{ default_nginx_controller_manifestUrl }}
-
-- name: Deploying metric server
-  shell: kubectl apply -f {{ metric_server_kubernetes_deploy_manifestUrl }}
+- name: Deploying metric server v0.4.2 (1/1)
+  shell: |
+    kubectl apply -f {{ metric_server_kubernetes_deploy_manifestUrl }}
 
 - name: Creating CA key
-  shell: kubeadm init phase upload-certs --upload-certs | grep -v certs
+  shell: |
+    kubeadm init phase upload-certs --upload-certs | grep -v certs
   register: K8S_KEY
 
-- name: Creating a join control plane command
-  shell:  kubeadm token create --print-join-command --certificate-key {{ K8S_KEY.stdout }}
+- name: Creating plane join command
+  shell: |
+    kubeadm token create --print-join-command --certificate-key {{ K8S_KEY.stdout }}
   register: K8S_JOIN_MASTER
 
-- name: Creating a join worker command
-  shell:  kubeadm token create --print-join-command
+- name: Creating a worker join command
+  shell: |
+    kubeadm token create --print-join-command
   register: K8S_JOIN_NODE
 
 - name: Adding K8S tokens to host holder
@@ -72,3 +82,7 @@
     key: "{{ K8S_KEY.stdout }}"
     joink8smaster: "{{ K8S_JOIN_MASTER.stdout }}"
     joink8snode: "{{ K8S_JOIN_NODE.stdout }}"
+
+- name: Waiting For 60 Seconds..
+  wait_for:
+    timeout: 60

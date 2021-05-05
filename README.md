@@ -1,58 +1,44 @@
-## On-Premises
+## Kubernetes On-Premises
 
-O playbook Ansible contém um inventário onde é inserido os endereços das máquinas e variaveis de ambiente, e é divido em 
-roles que contém objetivos específicos.
+Plyabook Ansible com o objetivo de provisionar um Cluser Kubernetes Single Mode ou Multi-Master.
+
+O preenchimento do inventário é um pré requisito. É validado as entradas preenchidas nele.
+
+**Sistemas Operacionais:**
+
+- Ubuntu 18.04 / 19.04 / 20.04 LTS x86_64
+- CentOS 7 x86_64
+
+**Versão das aplicações:**
+
+*Kubernetes: 1.21.0*
+
+*CRI-O: 1.21*
+
+*WeaveNet: Segue a versão do Cluster*
+
+*Metallb: v0.9.6*
+
+*Metricserver: v0.4.2*
 
 **Das funcionalidades do playbook:**
 
-&rightarrow; Multi sistema operacional (Homologado em CentOS 7 e Ubuntu 18.04)
+&rightarrow; Multi sistema operacional;
 
-&rightarrow; Geração de credenciais necessárias para qualquer serviço aleatóriamente
+&rightarrow; Geração de credenciais necessárias para qualquer serviço aleatóriamente;
 
-&rightarrow; Configuração de firewall. UFW e FirewallD (Opcional via condicional)
+&rightarrow; Configuração de firewall. UFW e FirewallD (Opcional via condicional);
 
-&rightarrow; Interface de status do HaProxy, acessível via endereço IP + porta 1936
+&rightarrow; Interface de status do HaProxy, acessível via endereço IP + porta 1936 (Opcional via condicional);
 
-&rightarrow; Deploy automático de serviços essenciais para o cluster como *weave-net*, *metallb* e *metric-server*
+&rightarrow; Deploy automático de serviços essenciais para o cluster como *weave-net*, *metallb* e *metric-server*;
 
-```
-.
-├── inventory
-│   └── main.yaml
-├── main.yaml
-└── roles
-    ├── create_cluster
-    ..
-    ├── generated_passwords
-    ..
-    ├── haproxy_primary
-    ..
-    ├── haproxy_secondary
-    ..
-    ├── install_kubernetes
-    ..
-    ├── join_masters
-    ..
-    └── join_nodes
-    ..
-```
+&rightarrow; Escolha do containe runtime, CRI-O ou ContainerD (Via condicional).
 
-**Das roles:**
+### Em desenvolvimento
 
-* **create_cluster** &rightarrow; Faz o `kubeadm init` do cluster, gera CRS's, faz deploy do metallb, ingress, 
-weave-net e etc. Gera o comando de realizar *join* no cluster. (Obs. Essa role roda em apenas uma maquina,
-que será escolhida como kubernetes_master_init)
+* Suporte ao ContainerD container runtime;
 
-* **generated_passwords** &rightarrow; Gera as credenciais necessárias para qualquer serviço que será usado no playbook
+* Fix no deploy em CentOS e RHEL;
 
-* **haproxy** &rightarrow; Disponibiliza o HaProxy em modo HA ou single mode, o `init` do Kubernetes é feito através do 
-*Virtual IP* que é declarado no inventário caso seja em HA. Toda a comunicação do cluster é feita através dele.
-
-* **install_kubernetes** &rightarrow; Instala os binários do Kubernetes, docker e o que for necessário para o 
-funcionamento eficiente do Kubernetes nas máquinas. Configurações de firewall, serviço e etc.
-
-* **join_masters** &rightarrow; Essa role tem apenas uma função, interpolar o comando de `join` para *control plane* que 
-a role create_cluster disponibiliza e executar nas máquinas que terão o papel de *master*
-
-* **join_workers** &rightarrow; Essa role tem apenas uma função também, interpolar o comando de `join` para *worker* que 
-a role create_cluster disponibiliza e executar nas máquinas que terão o papel de *worker*
+* Fix HaProxy com Multi-Master Mode.

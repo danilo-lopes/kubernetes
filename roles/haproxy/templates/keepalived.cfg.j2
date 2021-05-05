@@ -16,9 +16,9 @@ vrrp_instance VI_1 {
   advert_int 1
   authentication {
     auth_type PASS
-    auth_pass {{ hostvars['PASSWORD_HOLDER']['KEEP_AVALIVE_PASSWORD_AUTH'] }}
+    auth_pass {{ hostvars['env_passwords']['KEEP_AVALIVE_PASSWORD_AUTH'] }}
   }
   virtual_ipaddress {
-    {{ LOADBALANCER }}
+    {{ VRRP_IP_ADDRESS }}
   }
 }

@@ -1,24 +1,12 @@
 ---
-- name: Enabling Docker
+- name: Enabling CRIO
   systemd:
-    name: docker 
+    name: crio 
     enabled: yes
-  listen: "start and enable"
-
-- name: Starting Docker service
-  systemd:
-    name: docker 
-    state: started
-  listen: "start and enable"
+  listen: "enable crio service"
 
 - name: Enabling Kubelet
   systemd:
     name: kubelet 
     enabled: yes
-  listen: "start and enable"
-
-- name: Starting Kubelet service
-  systemd:
-    name: kubelet 
-    state: started
-  listen: "start and enable"
+  listen: "enable kubelet service"
