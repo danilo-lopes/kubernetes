@@ -216,8 +216,8 @@
   when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
 
 - name: Ubuntu | Adding Kubernetes APT signing key
-  apt_key:
-    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+  ansible.builtin.apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg.asc
     state: present
   when: ansible_facts['distribution'] == "Ubuntu"
 
