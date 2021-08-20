@@ -26,13 +26,13 @@
     dest: /root/.kube/config
     state: link
 
-# - name: Deploying WeaveNet CNI Network (1/1)
-#   shell: |
-#     kubectl apply -f {{ default_kubernetes_cni_weavenet_manifestUrl }}
-
-- name: Deploying Cilium CNI Network (1/1)
+- name: Deploying WeaveNet CNI Network (1/1)
   shell: |
-    kubectl apply -f {{ kubernetes_cni_cilium_manifestUrl }}
+    kubectl apply -f {{ default_kubernetes_cni_weavenet_manifestUrl }}
+
+# - name: Deploying Cilium CNI Network (1/1)
+#   shell: |
+#     kubectl apply -f {{ kubernetes_cni_cilium_manifestUrl }}
 
 - name: Adding Metallb ConfigMap manifest to /root (1/4)
   template:

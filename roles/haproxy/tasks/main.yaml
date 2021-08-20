@@ -96,7 +96,7 @@
 
 - name: Installing HaProxy
   package:
-    name: haproxy
+    name: ['haproxy']
     state: present
 
 - name: Installing KeepaliveD

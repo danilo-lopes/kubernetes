@@ -4,6 +4,15 @@
     kubeadm reset --force
   register: kubeadm_reset
 
+- name: Restarting Kubelet on node
+  systemd:
+    name: kubelet
+    state: restarted
+
+- name: Waiting For 30 Seconds..
+  wait_for:
+    timeout: 30
+
 - name: Adding control-plane node in cluster
   shell: |
     {{ hostvars['K8S_TOKEN_HOLDER']['joink8smaster'] }} --ignore-preflight-errors=NumCPU

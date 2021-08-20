@@ -138,7 +138,7 @@
 
 - assert:
     that: 
-    - KUBERNETES_SECURITY_PORT
+    - KUBERNETES_SECURITY_PORT | length > 0
     fail_msg: "The variable 'KUBERNETES_SECURITY_PORT' can't be nil"
     success_msg: "Passed"
   when: KUBERNETES_MULTIMASTER_MODE | bool
@@ -170,26 +170,54 @@
   when:  KUBERNTES_SINGLE_MODE | bool
 
 - assert:
-    that: 
-    - KUBERNETES_SECURITY_PORT
+    that:
+    - KUBERNETES_SECURITY_PORT | length > 0
     fail_msg: "The variable 'KUBERNETES_SECURITY_PORT' can't be nil"
     success_msg: "Passed"
-  when:  KUBERNTES_SINGLE_MODE | bool
+  when: KUBERNTES_SINGLE_MODE | bool
 
 #################################################################################################################################################################
 
-- name: Assertion for Container Runtime
+- name: Assertion for CRIO Container Runtime
   assert:
     that:
-      - CRIO
+      - CRIO | length > 0
     fail_msg: "The variables 'CRIO' can't be nil"
     success_msg: "Passed"
-#################################################################################################################################################################
+  when: CRIO | bool
 
-- name: Assertion for CRIO
-  assert:
+- assert:
+    that:
+    - not CONTAINERD | bool
+    fail_msg: "The variables 'CONTAINERD' must be False"
+  when: CRIO | bool
+
+- assert:
     that: 
     - CRIO | bool
     fail_msg: "The variable 'CRIO' must be True"
     success_msg: "Passed"
   when: CRIO | bool
+
+#################################################################################################################################################################
+
+- name: Assertion for CONTAINERD Container Runtime
+  assert:
+    that:
+      - CONTAINERD | length > 0
+    fail_msg: "The variables 'CRIO' can't be nil"
+    success_msg: "Passed"
+  when: CONTAINERD | bool
+
+- assert:
+    that:
+    - not CRIO | bool
+    fail_msg: "The variables 'CRIO' must be False"
+  when: CONTAINERD | bool
+
+- assert:
+    that: 
+    - CONTAINERD | bool
+    fail_msg: "The variable 'CRIO' must be True"
+    success_msg: "Passed"
+  when: CONTAINERD | bool

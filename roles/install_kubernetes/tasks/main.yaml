@@ -121,15 +121,30 @@
     name: overlay
     state: present
 
-- name: Making br_netfilter Module Permanent
-  lineinfile:
-    path: /etc/modules
-    line: br_netfilter
+- name: RedHat | Creating Kubernetes modules file
+  ansible.builtin.file:
+    path: /etc/modules-load.d/kubernetes.conf
+    state: touch
+    mode: '0755'
+  when: ansible_facts['os_family'] == "RedHat"
 
-- name: Making overlay Module Permanent
+- name: Ubuntu | Making overlay and br_netfilter Module Permanent
   lineinfile:
     path: /etc/modules
-    line: overlay
+    line: "{{ item }}"
+  with_items:
+  - br_netfilter
+  - overlay
+  when: ansible_facts['distribution'] == "Ubuntu"
+
+- name: RedHat | Making overlay and br_netfilter Module Permanent
+  lineinfile:
+    path: /etc/modules-load.d/kubernetes.conf
+    line: "{{ item }}"
+  with_items:
+  - br_netfilter
+  - overlay
+  when: ansible_facts['os_family'] == "RedHat"
 
 - name: Enabling IPv4 bridge Kernel Module
   ansible.posix.sysctl:
@@ -176,6 +191,26 @@
   - 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.21/xUbuntu_18.04/ /'
   when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
 
+- name: Redhat | Adding Libcontainers Repo
+  yum_repository:
+    name: devel_kubic_libcontainers_stable
+    description: Releases of Upstream github.com/containers packages (CentOS_7)
+    baseurl: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_7/
+    gpgcheck: "yes"
+    gpgkey: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/CentOS_7/repodata/repomd.xml.key
+    enabled: "yes"
+  when: ansible_facts['os_family'] == "RedHat" and CRIO | bool
+
+- name: Redhat | Adding Crio Repo
+  yum_repository:
+    name: devel_kubic_libcontainers_stable_cri-o_1.21
+    description: devel:kubic:libcontainers:stable:cri-o:1.21 (CentOS_7)
+    baseurl: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.21/CentOS_7/
+    gpgcheck: "yes"
+    gpgkey: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.21/CentOS_7/repodata/repomd.xml.key
+    enabled: "yes"
+  when: ansible_facts['os_family'] == "RedHat" and CRIO | bool
+
 - name: Ubuntu | Installing CRI-O
   package:
     name: [
@@ -186,8 +221,18 @@
     ]
     update_cache: true
     state: present
-  notify: "enable crio service"
   when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
+
+- name: RedHat | Installing CRI-O
+  package:
+    name: [
+      'cri-o',
+      'cri-tools',
+      'runc'
+    ]
+    update_cache: true
+    state: present
+  when: CRIO | bool and ansible_facts['os_family'] == "RedHat"
 
 - name: Creating CNI Directory
   file:
@@ -208,12 +253,12 @@
     mode: 0644
   when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
 
-- name: Ubuntu | Puting Kubelet Config for CRIO
+- name: Puting Kubelet Config for CRIO
   copy:
     src: ../files/crio-kubelet.conf
     dest: /etc/default/kubelet
     mode: 0644
-  when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
+  when: CRIO | bool
 
 - name: Ubuntu | Adding Kubernetes APT signing key
   ansible.builtin.apt_key:
@@ -242,24 +287,22 @@
 - name: RedHat | Installing Kubernetes packages
   package:
     name: [
-      'kubelet-1.21.0',
-      'kubeadm-1.21.0',
-      'kubectl-1.21.0'
+      'kubelet-1.21.3',
+      'kubeadm-1.21.3',
+      'kubectl-1.21.3'
     ]
     state: present
     disable_excludes: Kubernetes
-  notify: "start and enable"
   when: ansible_facts['os_family'] == "RedHat"
 
 - name: Ubuntu | Installing Kubernetes packages
   package:
     name: [
-      'kubelet=1.21.0-00',
-      'kubeadm=1.21.0-00',
-      'kubectl=1.21.0-00'
+      'kubelet=1.21.3-00',
+      'kubeadm=1.21.3-00',
+      'kubectl=1.21.3-00'
     ]
     state: present
-  notify: "enable kubelet service"
   when: ansible_facts['distribution'] == "Ubuntu"
 
 - name: Restarting CRI-O Service
@@ -267,6 +310,7 @@
     name: crio
     state: restarted
     daemon_reload: yes
+    enabled: yes
   when: CRIO | bool
 
 - name: Restarting Kubelet Service
@@ -274,3 +318,4 @@
     name: kubelet
     state: restarted
     daemon_reload: yes
+    enabled: yes

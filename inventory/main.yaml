@@ -1,33 +1,34 @@
 all:
   vars:
-    #-> General Section
+    #-> General
     USER: vagrant
     # ansible_ssh_private_key_file: /home/danilo/.ssh/danilo.souza_mandic.pem
     FIREWALL: 'False'
 
-    #-> HaProxy Section
-    HAPROXY_ENABLED: 'False'
+    #-> HaProxy
+    HAPROXY_ENABLED: 'True'
 
     CLUSTER_HAPROXY: 'False'
-    SINGLE_HAPROXY: 'False'
-    VRRP_IP_ADDRESS: 172.16.1.37
+    SINGLE_HAPROXY: 'True'
+    VRRP_IP_ADDRESS: 192.168.15.37
 
     WEB_ADMINISTRATION_HAPROXY_ENABLED: 'False'
     HAPROXY_WEB_USER: ''
 
-    #-> Kubernetes Section
-    KUBERNETES_MULTIMASTER_MODE: 'False'
-    KUBERNTES_SINGLE_MODE: 'True'
-    KUBERNETES_SECURITY_PORT: 6443
+    #-> Kubernetes
+    KUBERNETES_MULTIMASTER_MODE: 'True'
+    KUBERNTES_SINGLE_MODE: 'False'
+    KUBERNETES_SECURITY_PORT: '6443'
 
     METALLB_ENABLED: 'True'
-    METALLB_RANGEIP_BEGIN: 172.16.1.38
-    METALLB_RANGEIP_END: 172.16.1.40
+    METALLB_RANGEIP_BEGIN: 192.168.15.38
+    METALLB_RANGEIP_END: 192.168.15.39
 
     TLS_ENABLED: 'True'
 
     #-> Container Runtime
     CRIO: 'True'
+    CONTAINERD: 'False'
 
   #-> Inventory
   children:
@@ -36,19 +37,23 @@ all:
       children:
         KUBERNETES_MASTER_INIT:
           hosts:
-            172.16.1.32
+            192.168.15.32
 
         KUBERNETES_MASTERS:
           hosts:
+            192.168.15.33:
+            192.168.15.34:
 
         KUBERNETES_NODES:
           hosts:
-            172.16.1.35:
+            192.168.15.35:
 
     haproxy:
       children:
         HAPROXY_PRIMARY:
           hosts:
+            192.168.15.30
 
         HAPROXY_SECONDARY:
           hosts:
+            
