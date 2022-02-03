@@ -287,9 +287,9 @@
 - name: RedHat | Installing Kubernetes packages
   package:
     name: [
-      'kubelet-1.21.3',
-      'kubeadm-1.21.3',
-      'kubectl-1.21.3'
+      'kubelet-1.22.6',
+      'kubeadm-1.22.6',
+      'kubectl-1.22.6'
     ]
     state: present
     disable_excludes: Kubernetes
@@ -298,9 +298,9 @@
 - name: Ubuntu | Installing Kubernetes packages
   package:
     name: [
-      'kubelet=1.21.3-00',
-      'kubeadm=1.21.3-00',
-      'kubectl=1.21.3-00'
+      'kubelet=1.22.6-00',
+      'kubeadm=1.22.6-00',
+      'kubectl=1.22.6-00'
     ]
     state: present
   when: ansible_facts['distribution'] == "Ubuntu"
