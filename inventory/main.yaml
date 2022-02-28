@@ -16,6 +16,7 @@ all:
     HAPROXY_WEB_USER: ''
 
     #-> Kubernetes
+    KUBERNETES_VERSION: '1.23.3'
     KUBERNETES_MULTIMASTER_MODE: 'True'
     KUBERNTES_SINGLE_MODE: 'False'
     KUBERNETES_SECURITY_PORT: '6443'
@@ -47,6 +48,7 @@ all:
         KUBERNETES_NODES:
           hosts:
             192.168.15.35:
+            192.168.15.36:
 
     haproxy:
       children:

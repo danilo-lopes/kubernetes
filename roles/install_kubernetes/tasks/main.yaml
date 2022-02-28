@@ -178,8 +178,8 @@
     url: "{{ item }}"
     state: present
   loop:
-  - 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/Release.key'
-  - 'https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:1.21/xUbuntu_18.04/Release.key'
+  - 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/Release.key'
+  - "https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:{{ KUBERNETES_VERSION | regex_replace('(.).$', '') }}/xUbuntu_20.04/Release.key"
   when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
 
 - name: Ubuntu | Adding CRI-O Repository
@@ -187,8 +187,8 @@
     repo: "{{ item }}"
     state: present
   loop:
-  - 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_18.04/ /'
-  - 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.21/xUbuntu_18.04/ /'
+  - 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /'
+  - "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ KUBERNETES_VERSION | regex_replace('(.).$', '') }}/xUbuntu_20.04/ /"
   when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
 
 - name: Redhat | Adding Libcontainers Repo
@@ -203,11 +203,11 @@
 
 - name: Redhat | Adding Crio Repo
   yum_repository:
-    name: devel_kubic_libcontainers_stable_cri-o_1.21
-    description: devel:kubic:libcontainers:stable:cri-o:1.21 (CentOS_7)
-    baseurl: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.21/CentOS_7/
+    name: devel_kubic_libcontainers_stable_cri-o_{{ KUBERNETES_VERSION | regex_replace('(.).$'', '') }}
+    description: devel:kubic:libcontainers:stable:cri-o:{{ KUBERNETES_VERSION | regex_replace('(.).$', '') }} (CentOS_7)
+    baseurl: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ KUBERNETES_VERSION | regex_replace('(.).$', '') }}/CentOS_7/
     gpgcheck: "yes"
-    gpgkey: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/1.21/CentOS_7/repodata/repomd.xml.key
+    gpgkey: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ KUBERNETES_VERSION | regex_replace('(.).$', '') }}/CentOS_7/repodata/repomd.xml.key
     enabled: "yes"
   when: ansible_facts['os_family'] == "RedHat" and CRIO | bool
 
@@ -287,9 +287,9 @@
 - name: RedHat | Installing Kubernetes packages
   package:
     name: [
-      'kubelet-1.22.6',
-      'kubeadm-1.22.6',
-      'kubectl-1.22.6'
+      'kubelet-{{KUBERNETES_VERSION}}',
+      'kubeadm-{{KUBERNETES_VERSION}}',
+      'kubectl-{{KUBERNETES_VERSION}}'
     ]
     state: present
     disable_excludes: Kubernetes
@@ -298,9 +298,9 @@
 - name: Ubuntu | Installing Kubernetes packages
   package:
     name: [
-      'kubelet=1.22.6-00',
-      'kubeadm=1.22.6-00',
-      'kubectl=1.22.6-00'
+      'kubelet={{KUBERNETES_VERSION}}-00',
+      'kubeadm={{KUBERNETES_VERSION}}-00',
+      'kubectl={{KUBERNETES_VERSION}}-00'
     ]
     state: present
   when: ansible_facts['distribution'] == "Ubuntu"
