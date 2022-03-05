@@ -234,31 +234,31 @@
     state: present
   when: CRIO | bool and ansible_facts['os_family'] == "RedHat"
 
-- name: Creating CNI Directory
-  file:
-    path: /etc/cni/net.d
-    state: directory
+# - name: Creating CNI Directory
+#   file:
+#     path: /etc/cni/net.d
+#     state: directory
 
 - name: Puting CRIO File into /etc/cni/net.d/
   copy:
     src: ../files/crio.conf
-    dest: /etc/cni/net.d/10-crio.conf
+    dest: /etc/crio/crio.conf
     mode: 0644
   when: CRIO | bool
 
-- name: Ubuntu | Puting Container Storage config into /etc/containers
-  copy:
-    src: ../files/storage.conf
-    dest: /etc/containers/storage.conf
-    mode: 0644
-  when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
+# - name: Ubuntu | Puting Container Storage config into /etc/containers
+#   copy:
+#     src: ../files/storage.conf
+#     dest: /etc/containers/storage.conf
+#     mode: 0644
+#   when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
 
-- name: Puting Kubelet Config for CRIO
-  copy:
-    src: ../files/crio-kubelet.conf
-    dest: /etc/default/kubelet
-    mode: 0644
-  when: CRIO | bool
+# - name: Puting Kubelet Config for CRIO
+#   copy:
+#     src: ../files/crio-kubelet.conf
+#     dest: /etc/default/kubelet
+#     mode: 0644
+#   when: CRIO | bool
 
 - name: Ubuntu | Adding Kubernetes APT signing key
   ansible.builtin.apt_key:
