@@ -1,8 +1,8 @@
-## Kubernetes On-Premises
+## Kubernetes Bare Metal
 
 ![Kubernetes Logo](https://raw.githubusercontent.com/kubernetes-sigs/kubespray/master/docs/img/kubernetes-logo.png)
 
-Plyabook Ansible com o objetivo de provisionar um Cluser Kubernetes Single Mode ou Multi-Master Mode.
+Plyabook Ansible com o objetivo de provisionar um Cluser Kubernetes Single Mode ou Multi-Master Mode básico.
 
 O preenchimento do inventário é um pré requisito. As informações fornecidas a ele são validadas.
 
@@ -14,9 +14,7 @@ O preenchimento do inventário é um pré requisito. As informações fornecidas
 
 &rightarrow; **Interface de status do HaProxy, acessível via endereço IP + porta 1936 (Opcional via condicional)**;
 
-&rightarrow; **Deploy automático de serviços essenciais para o cluster como weave-net, metallb e metric-server**;
-
-&rightarrow; **Escolha do container runtime, CRI-O ou ContainerD (Via condicional)**.
+&rightarrow; **Escolha do container runtime, CRI-O ou PODMAN (Via condicional)**.
 
 **Dependencias:**
 - Ansible 2.9+
@@ -26,25 +24,53 @@ O preenchimento do inventário é um pré requisito. As informações fornecidas
     ansible-galaxy collection install ansible.posix
     ```
 
+**Requisitos Computacionais Minimos:**
+
+- **RHEL like:**
+  - **Controlplanes:**
+    - **CPU:** 4vCPU
+    - **Memoria:** 2048Mb
+    - **Disco:** 30Gb
+  - **Nodes:**
+    - **CPU:** 2vCPU
+    - **Memoria:** 1024
+    - **Disco:** 30Gb
+  - **HaProxy:**
+    - **CPU:** 1vCPU
+    - **Memoria:** 515Mb
+    - **Disco:** 30Gb
+
+- **Ubuntu:**
+  - **Controlplanes:**
+    - **CPU:** 2vCPU
+    - **Memoria:** 2048Mb
+    - **Disco:** 30Gb
+  - **Nodes:**
+    - **CPU:** 1vCPU
+    - **Memoria:** 1024
+    - **Disco:** 30Gb
+  - **HaProxy:**
+    - **CPU:** 1vCPU
+    - **Memoria:** 515Mb
+    - **Disco:** 30Gb
+  
+**obs: Varia do tamanho do workload do ambiente**
+
 **Distribuições Suportadas:**
 - Ubuntu 18.04 / 20.04 LTS x86_64
 - CentOS 7 x86_64
 
 **Componentes:**
 - **Core**:
-  - Kubernetes: v1.21.3
-  - CRI-O: v1.21
+  - Kubernetes: vx.xx.x (coletado via variável)
+  - CRI-O: (segue a versão do cluster)
+  - PODMAN: Em desenvolvimento
 
 - **Network Plugin**:
-  - Cilium: v1.9
   - WeaveNet: Segue a versão do Cluster
-
-- **Aplicação**:
-  - Metallb: v0.9.6
-  - Metricserver: v0.4.2
 
 ### Fix e Desenvolvimento
 
-* Suporte ao ContainerD container runtime;
+* Suporte ao PODMAN container runtime;
 
 * Fix no modo Virtual IP (VRRP) com HaProxy Multi-Master Mode.

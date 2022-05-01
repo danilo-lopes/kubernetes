@@ -2,7 +2,7 @@ all:
   vars:
     #-> General
     USER: vagrant
-    # ansible_ssh_private_key_file: /home/danilo/.ssh/CERT.PEM
+    # ansible_ssh_private_key_file: /home/<USER>/.ssh/CERT.PEM
     FIREWALL: 'False'
 
     #-> HaProxy
@@ -16,16 +16,12 @@ all:
     HAPROXY_WEB_USER: ''
 
     #-> Kubernetes
-    KUBERNETES_VERSION: '1.23.3'
+    KUBERNETES_VERSION: '1.21.11'
     KUBERNETES_MULTIMASTER_MODE: 'True'
     KUBERNTES_SINGLE_MODE: 'False'
     KUBERNETES_SECURITY_PORT: '6443'
 
-    METALLB_ENABLED: 'True'
-    METALLB_RANGEIP_BEGIN: 192.168.15.38
-    METALLB_RANGEIP_END: 192.168.15.39
-
-    TLS_ENABLED: 'True'
+    KUBELET_TLS_ENABLED: 'True'
 
     #-> Container Runtime
     CRIO: 'True'
@@ -49,6 +45,7 @@ all:
           hosts:
             192.168.15.35:
             192.168.15.36:
+            192.168.15.37:
 
     haproxy:
       children:

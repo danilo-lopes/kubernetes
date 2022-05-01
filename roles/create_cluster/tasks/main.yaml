@@ -30,41 +30,6 @@
   shell: |
     kubectl apply -f {{ default_kubernetes_cni_weavenet_manifestUrl }}
 
-# - name: Deploying Cilium CNI Network (1/1)
-#   shell: |
-#     kubectl apply -f {{ kubernetes_cni_cilium_manifestUrl }}
-
-- name: Adding Metallb ConfigMap manifest to /root (1/4)
-  template:
-    src: metallb-cm.yaml.j2
-    dest: /root/metallb-cm.yaml
-    mode: 0644
-  when: METALLB_ENABLED | bool
-
-- name: Deploying Metallb manifest v0.9.6 (2/4)
-  shell: | 
-    kubectl apply -f {{ metallb_kubernetes_namespace_manifestUrl }}
-  when: METALLB_ENABLED | bool
-
-- name: Deploying Metallb manifest v0.9.6 (3/4)
-  shell: | 
-      kubectl apply -f {{ metallb_kubernetes_deploy_manifestUrl }}
-  when: METALLB_ENABLED | bool
-
-- name: Generating Metallb secret (4/4)
-  shell: |
-    kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
-  when: METALLB_ENABLED | bool
-
-- name: Deploying Metallb manifest v0.9.6 (4/4)
-  shell: | 
-    kubectl apply -f /root/metallb-cm.yaml
-  when: METALLB_ENABLED | bool
-
-- name: Deploying metric server v0.4.2 (1/1)
-  shell: |
-    kubectl apply -f {{ metric_server_kubernetes_deploy_manifestUrl }}
-
 - name: Creating CA key
   shell: |
     kubeadm init phase upload-certs --upload-certs | grep -v certs

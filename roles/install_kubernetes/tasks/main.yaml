@@ -179,7 +179,7 @@
     state: present
   loop:
   - 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/Release.key'
-  - "https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:{{ KUBERNETES_VERSION | regex_replace('(.).$', '') }}/xUbuntu_20.04/Release.key"
+  - "https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable:cri-o:{{ KUBERNETES_VERSION | regex_replace('(.)..$', '') }}/xUbuntu_20.04/Release.key"
   when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
 
 - name: Ubuntu | Adding CRI-O Repository
@@ -188,7 +188,7 @@
     state: present
   loop:
   - 'deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_20.04/ /'
-  - "deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ KUBERNETES_VERSION | regex_replace('(.).$', '') }}/xUbuntu_20.04/ /"
+  - "deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ KUBERNETES_VERSION | regex_replace('(.)..$', '') }}/xUbuntu_20.04/ /"
   when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
 
 - name: Redhat | Adding Libcontainers Repo
@@ -203,11 +203,11 @@
 
 - name: Redhat | Adding Crio Repo
   yum_repository:
-    name: devel_kubic_libcontainers_stable_cri-o_{{ KUBERNETES_VERSION | regex_replace('(.).$'', '') }}
-    description: devel:kubic:libcontainers:stable:cri-o:{{ KUBERNETES_VERSION | regex_replace('(.).$', '') }} (CentOS_7)
-    baseurl: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ KUBERNETES_VERSION | regex_replace('(.).$', '') }}/CentOS_7/
+    name: devel_kubic_libcontainers_stable_cri-o_{{ KUBERNETES_VERSION | regex_replace('(.)..$'', '') }}
+    description: devel:kubic:libcontainers:stable:cri-o:{{ KUBERNETES_VERSION | regex_replace('(.)..$', '') }} (CentOS_7)
+    baseurl: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ KUBERNETES_VERSION | regex_replace('(.)..$', '') }}/CentOS_7/
     gpgcheck: "yes"
-    gpgkey: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ KUBERNETES_VERSION | regex_replace('(.).$', '') }}/CentOS_7/repodata/repomd.xml.key
+    gpgkey: https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/{{ KUBERNETES_VERSION | regex_replace('(.)..$', '') }}/CentOS_7/repodata/repomd.xml.key
     enabled: "yes"
   when: ansible_facts['os_family'] == "RedHat" and CRIO | bool
 
@@ -234,31 +234,24 @@
     state: present
   when: CRIO | bool and ansible_facts['os_family'] == "RedHat"
 
-# - name: Creating CNI Directory
-#   file:
-#     path: /etc/cni/net.d
-#     state: directory
+- name: Creating CNI Directory
+  file:
+    path: /etc/cni/net.d
+    state: directory
 
-- name: Puting CRIO File into /etc/cni/net.d/
+- name: Puting Kubelet Config for CRIO
   copy:
-    src: ../files/crio.conf
-    dest: /etc/crio/crio.conf
+    src: ../files/crio/crio-kubelet.conf
+    dest: /etc/default/kubelet
     mode: 0644
   when: CRIO | bool
 
-# - name: Ubuntu | Puting Container Storage config into /etc/containers
-#   copy:
-#     src: ../files/storage.conf
-#     dest: /etc/containers/storage.conf
-#     mode: 0644
-#   when: ansible_facts['distribution'] == "Ubuntu" and CRIO | bool
-
-# - name: Puting Kubelet Config for CRIO
-#   copy:
-#     src: ../files/crio-kubelet.conf
-#     dest: /etc/default/kubelet
-#     mode: 0644
-#   when: CRIO | bool
+- name: Puting CRI-O Config File
+  copy:
+    src: ../files/crio/crio.conf
+    dest: /etc/crio/crio.conf.d/02-cgroup-manager.conf
+    mode: 0644
+  when: CRIO | bool
 
 - name: Ubuntu | Adding Kubernetes APT signing key
   ansible.builtin.apt_key:
@@ -296,13 +289,24 @@
   when: ansible_facts['os_family'] == "RedHat"
 
 - name: Ubuntu | Installing Kubernetes packages
-  package:
+  apt:
     name: [
       'kubelet={{KUBERNETES_VERSION}}-00',
       'kubeadm={{KUBERNETES_VERSION}}-00',
       'kubectl={{KUBERNETES_VERSION}}-00'
     ]
+    force: yes
     state: present
+  when: ansible_facts['distribution'] == "Ubuntu"
+
+- name: Ubuntu | Preventing Kubernetes Packages to Be Upgrated
+  dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+  - kubeadm
+  - kubectl
+  - kubelet
   when: ansible_facts['distribution'] == "Ubuntu"
 
 - name: Restarting CRI-O Service

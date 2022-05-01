@@ -17,7 +17,7 @@ controlPlaneEndpoint: "{{ hostvars[groups['KUBERNETES_MASTER_INIT'][0]]['ansible
 controlPlaneEndpoint: "{{ hostvars[groups['KUBERNETES_MASTER_INIT'][0]]['ansible_default_ipv4']['address'] }}:{{ KUBERNETES_SECURITY_PORT }}"
 {% endif %}
 ---
-{% if TLS_ENABLED | bool %}
+{% if KUBELET_TLS_ENABLED | bool %}
 kind: KubeletConfiguration
 apiVersion: kubelet.config.k8s.io/v1beta1
 serverTLSBootstrap: true
